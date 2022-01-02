@@ -11,7 +11,6 @@ let tokenList;
 
 let isDexInitialized = false;
 
-var tokenItem; 
 
 (async function(){
 
@@ -20,8 +19,6 @@ if(!isDexInitialized){
   dex = Moralis.Plugins.oneInch;
   await getSupportedTokens();
   await appendTokenListToForm("tokens");
-  tokenItem = document.getElementById('tokenItem');
-  // await appendTokenListToForm("tokensB");
   await Moralis.enableWeb3();
   isDexInitialized = true;
 }
@@ -29,11 +26,21 @@ if(!isDexInitialized){
 })();
 
 
+if(user){
+  let user = Moralis.User.current();
+  document.getElementById("address").innerHTML = user.get("ethAddress");
+}
 
-  if(user){
-    let user = Moralis.User.current();
-    document.getElementById("address").innerHTML = user.get("ethAddress");
- }
+
+$('#table').on('click', 'tbody tr', function(event) {
+  $(this).addClass('highlight').siblings().removeClass('highlight');
+  var row = $(this);
+  console.log("Image: " + row.children('td')[0].children[0].src);
+  console.log("Token: " + row.children('td')[1].children[0].innerText);
+  console.log("Qty: " + row.children('td')[2].children[0].innerText);
+});
+
+
 
 async function login() {
     if (!user) {
@@ -68,7 +75,7 @@ async function login() {
   
     async function appendTokenListToForm(element){
 
-    let index = 0;
+    let index = 1;
     for(const [address, name, logoURI] of Object.entries(tokenList.tokens)){
       // console.log(name.address);
       // console.log(name.symbol);
@@ -82,14 +89,9 @@ async function login() {
 
       //TOKEN ITEM
       var tableRow = document.createElement("tr");
-      // list.className = "list-group-item d-flex justify-content-between";
-      tableRow.id = "tokenRow"
+      tableRow.id = `${name.address}`
+      // tableRow.className = "clickable"
       var tbody = document.getElementById(element);
-
-      // var tableHead = document.createElement("th");
-      // tableHead.scope = "row"
-
-      // tableRow.appendChild(tableHead);
 
       //IMAGE
       var tableDetail1 = document.createElement("td");
@@ -100,6 +102,7 @@ async function login() {
       img.src = name.logoURI; 
       img.width = 80;
       img.height = 80; 
+      img.id = `${index}-tokenImg`;
 
       tableDetail1.appendChild(img);
 
@@ -109,7 +112,7 @@ async function login() {
       var p = document.createElement("p");
       p.className = "text-start align-self-center"
       p.innerText = name.symbol;
-      p.id = "tokenName";
+      p.id = `${index}-tokenName`;
 
       tableDetail2.appendChild(p);
 
@@ -119,7 +122,7 @@ async function login() {
       var qty = document.createElement("p");
       qty.className = "text-start align-self-center fs-5 fw-bold"
       qty.innerText = "0";
-      qty.id = "tokenQty"
+      qty.id = `${index}-tokenQty`
 
       tableDetail3.appendChild(qty);
 
@@ -128,9 +131,8 @@ async function login() {
       tableRow.appendChild(tableDetail2);
       tableRow.appendChild(tableDetail3);
       tbody.appendChild(tableRow);
-      // var list = document.getElementById("li");
    
-      
+      index++;
 
   //NOTE: May need all of below back, trying with table to make use of bootstrap for ease...
       // //TOKEN ITEM
@@ -170,20 +172,27 @@ async function login() {
     }
   }
 
-  async function onSelectedToken(){
-    var e = document.getElementById("tokensA");
-    var value = e.options[e.selectedIndex].value;
-    var text = e.options[e.selectedIndex].text;
-
-      console.log("text: " + text)
-  }
-
-var mouseOverFunction = function (){
-  this.style.color = '#f5d38c';
-};
-
-tokenItem.onmouseover = mouseOverFunction;
-
+  // function getSelectedToken () {
+  //   var table = document.getElementById('table');
+  //   table.onclick = function (event) {
+  //     event = event || window.event;
+  //     var target = event.target
+  //     while (target && target.nodeName != 'TR'){
+  //       target = target.parentElement;
+  //     }
+  
+  //     var cells = target.cells;
+  
+  //   //   if (!cells.length || target.parentNode.nodeName == 'THEAD') {
+  //   //     return;
+  //   // }
+  
+  //     console.log(cells[0].src + "");
+  //     console.log(cells[1].innerText);
+  //     console.log(cells[2].innerText);     
+  //    }
+  
+  // }
 
 
   document.getElementById("btn-login").onclick = login;
