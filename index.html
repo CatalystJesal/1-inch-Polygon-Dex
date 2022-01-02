@@ -29,19 +29,22 @@
     </form> -->
 
     <form>
-      <div class = "container p-3 overflow-auto border" style="height: 70vh; width: 350px">
-        <p class="fw-bold fs-4 text-center">Select a token</p>
+      <div id="tokenContainer" class = "container p-0 border border-3" style="height: 75vh; width: 340px; border-radius: 10px;">
+        <p id="selectTokenHeader" class="fw-bold">Select a token</p>
 
         <br>
         <br>
-        <p class="fw-normal fs-6 text-start">Token Name</p>
+       
+        <p id="tokenNameHeader" class="fw-bold">Token Name</p>
         <!-- <ul class="list-group  border justify-content-center" id="tokens">
         </ul> -->
-        <table id="table" class="table table-hover border">
-          <tbody class="border" id="tokens">
+        <div id="tokenTable" class = "container p-0 overflow-auto position-relative" style="max-height: 50vh; width: 100%; ">
+        <table id="table" class="table table-hover">
+          <tbody class="" id="tokens">
 
           </tbody>
         </table>
+      </div>
       </div>
     </form>
 
