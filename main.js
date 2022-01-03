@@ -1,22 +1,44 @@
 // const { default: Moralis } = require("moralis/types");
 
+// const { default: Moralis } = require("moralis/types");
+
 /* Moralis init code */
 const serverUrl = "https://3mxythy48esg.usemoralis.com:2053/server";
 const appId = "JAvSEVI7tpwfJlfWMT2RcTeuxGHy1nBODJLVfD6x";
 Moralis.start({ serverUrl, appId });
+var web3;
+var chainID;
 
 /* TODO: Add Moralis Authentication code */
-let user = Moralis.User.current();
-let dex;
-let tokenList;
-let isDexInitialized = false;
-let nativeBalance = 0;
-let nativeTokenAddress = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
-let otherBalances = [];
-let tokenBalancesMap = new Map();
+var user = Moralis.User.current();
+var dex;
+var tokenList;
+var isDexInitialized = false;
+var nativeBalance = 0;
+var nativeTokenAddress = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+var otherBalances = [];
+var tokenBalancesMap = new Map();
 
+function setWeb3Environment(){
+  web3 = new Web3(window.ethereum);
+  monitorNetwork();
+}
+
+ function monitorNetwork(){
+  Moralis.onChainChanged(async function(){
+    chainID = await web3.eth.net.getId();
+    console.log(chainID);
+      if(chainID == 137){
+        updateTableBalances();
+      } else {
+        updateTableBalances(true);
+      }
+  })
+}
 
 (async function(){
+  
+  setWeb3Environment();
   await Moralis.initPlugins();
   dex = Moralis.Plugins.oneInch;
   // const web3 = await Moralis.enableWeb3();
@@ -26,7 +48,8 @@ let tokenBalancesMap = new Map();
   if(user){
      await getTokenBalances();
      await updateTokenBalancesMap(nativeBalance, otherBalances);
-     updateTableBalances();
+     if(chainID == 137)
+      updateTableBalances();
   } else {
     updateTableBalances(true);
   }
@@ -239,7 +262,7 @@ $("#inputSearch").keyup(function () {
 //Make it possible to search/add tokens that isn't in the list 
 
 
-
+//Make sure when network is switched while the user is logged-in, the balances are reset from the table
 
 //Mechanics of the DEX
 
