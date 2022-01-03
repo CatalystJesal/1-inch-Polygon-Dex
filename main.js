@@ -29,18 +29,22 @@ function hasToken(key){
 }
 
 async function getTokenBalances() {
+  console.log("Token balances fetched...")
+
   const options = { chain: 'polygon'}
 
-  nativeBalance = await Moralis.Web3API.account.getNativeBalance(options);
+  var res = await Moralis.Web3API.account.getNativeBalance(options);
 
-  nativeBalance = Moralis.Units.FromWei(nativeBalance.balance);
+  nativeBalance = res;
+
+  nativeBalance = await Moralis.Units.FromWei(`${nativeBalance.balance}`, 18);
 
   otherBalances = await Moralis.Web3API.account.getTokenBalances(options);
   
 }
 
 function updateTokenBalancesMap(balances){
-
+  console.log("Balances map updating...")
   //Native balance
   setToken(nativeTokenAddress, nativeBalance);
 
@@ -51,9 +55,16 @@ function updateTokenBalancesMap(balances){
   console.log(tokenBalancesMap);
 }
 
+if(user){
+  console.log("If User condition")
+  let user = Moralis.User.current();
+  document.getElementById("address").innerHTML = user.get("ethAddress");
+
+}
+
 
 (async function(){
-
+  console.log("Async function() running...")
 if(!isDexInitialized){
   await Moralis.initPlugins();
   dex = Moralis.Plugins.oneInch;
@@ -69,10 +80,6 @@ if(!isDexInitialized){
 })();
 
 
-if(user){
-  let user = Moralis.User.current();
-  document.getElementById("address").innerHTML = user.get("ethAddress");
-}
 
  //This function will be required for the actual DEX swap functionality
 $('#table').on('click', 'tbody tr', function(event) {
@@ -88,6 +95,7 @@ $('#table').on('click', 'tbody tr', function(event) {
 
 
 async function login() {
+  console.log("Login...")
     if (!user) {
       user = await Moralis.authenticate({ signingMessage: "Log in using Moralis" })
         .then(function (user) {
@@ -119,7 +127,8 @@ async function login() {
   }
   
     async function populateTable(element){
-
+      console.log("Populating Table...")
+      updateTokenBalancesMap(otherBalances);
       for(const [address, name, logoURI] of Object.entries(tokenList.tokens)){
         generateTokenHTML(element, address, name, logoURI);
       }
@@ -127,7 +136,7 @@ async function login() {
   
 
   function generateTokenHTML(element, address, name, logoURI){
-    
+ 
       // console.log(address);
       // console.log(name.symbol);
       // console.log(name.logoURI);
@@ -142,14 +151,11 @@ async function login() {
       tableDetail1.className = '';
       tableDetail1.style.width = '1px';
       var img = document.createElement("img")
-      img.className = "img-thumbnail";
       img.alt = name.symbol;
       img.src = name.logoURI; 
-      img.width = 80;
-      img.height = 80; 
       img.style.width = "30px";
       img.style.borderRadius = "30px"
-      img.id = `${address}-tokenImg`;
+      img.id = `${address}-${name.symbol}-img`;
 
       tableDetail1.appendChild(img);
 
@@ -189,32 +195,12 @@ async function login() {
 }
 
 
-// function search() {
-//   var input, filter, table, tr, td, i, txtValue;
-//   input = document.getElementById("inputSearch");
-//   filter = input.value.toUpperCase();
-//   table = document.getElementById("table");
-//   tr = table.getElementsByTagName("tr");
-//   for (i = 0; i < tr.length; i++) {
-
-//     td = tr[i].getElementsByTagName("td")[1];
-//     // console.log(td);
-//     if (td) {
-//       txtValue = td.innerText;
-//       if (txtValue.toUpperCase().indexOf(filter) > -1) {
-//         tr[i].style.display = "";
-//       } else {
-//         tr[i].style.display = "none";
-//       }
-//     }       
-//   }
-// }
-
 $("#inputSearch").keyup(function () {
   var value = $(this).val().toUpperCase();
 
-  $("#tokens tr").filter(function(){
+  $("#table tr").filter(function(){
     var row = $(this)
+    
     row.toggle(row.text().toUpperCase().indexOf(value) > -1)
   })
   
