@@ -120,12 +120,14 @@ async function login() {
   
     async function populateTable(element){
 
-      generateTokenHTML(element);
+      for(const [address, name, logoURI] of Object.entries(tokenList.tokens)){
+        generateTokenHTML(element, address, name, logoURI);
+      }
     }
   
 
-  function generateTokenHTML(element){
-    for(const [address, name, logoURI] of Object.entries(tokenList.tokens)){
+  function generateTokenHTML(element, address, name, logoURI){
+    
       // console.log(address);
       // console.log(name.symbol);
       // console.log(name.logoURI);
@@ -164,6 +166,7 @@ async function login() {
 
       //TOKEN QTY
       var tableDetail3 = document.createElement("td");
+      tableDetail3.className = '';
       var qty = document.createElement("p");
       qty.className = "text-start text-end fs-6 fw-bold"
 
@@ -172,10 +175,6 @@ async function login() {
       } else {
         qty.innerText = "0";
       }
-
-      //Native Balance
-      // console.log(tokenBalancesMap.get(address));
-        
     
       qty.id = `${address}-tokenQty`
 
@@ -187,10 +186,40 @@ async function login() {
       tableRow.appendChild(tableDetail3);
       tbody.appendChild(tableRow);
 
-      // setToken(address, 0);
-
-  }
 }
+
+
+// function search() {
+//   var input, filter, table, tr, td, i, txtValue;
+//   input = document.getElementById("inputSearch");
+//   filter = input.value.toUpperCase();
+//   table = document.getElementById("table");
+//   tr = table.getElementsByTagName("tr");
+//   for (i = 0; i < tr.length; i++) {
+
+//     td = tr[i].getElementsByTagName("td")[1];
+//     // console.log(td);
+//     if (td) {
+//       txtValue = td.innerText;
+//       if (txtValue.toUpperCase().indexOf(filter) > -1) {
+//         tr[i].style.display = "";
+//       } else {
+//         tr[i].style.display = "none";
+//       }
+//     }       
+//   }
+// }
+
+$("#inputSearch").keyup(function () {
+  var value = $(this).val().toUpperCase();
+
+  $("#tokens tr").filter(function(){
+    var row = $(this)
+    row.toggle(row.text().toUpperCase().indexOf(value) > -1)
+  })
+  
+})
+
 
 
   document.getElementById("btn-login").onclick = login;

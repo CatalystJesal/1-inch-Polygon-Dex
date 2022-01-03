@@ -1,6 +1,4 @@
 
-
-
 .highlight{
     background-color: #ECECEC
     
@@ -26,5 +24,28 @@
    .table tbody tr td  {
         line-height: 19px;
    }
+   
+   #tokenContainer {
+    height: 75vh; 
+    width: 340px; 
+    border-radius: 10px;
 
+   }
 
+   #inputDiv{
+       display: flex;
+       justify-content: center;
+   }
+
+    #inputSearch {
+
+    width: 90%;
+    line-height: 30px;
+    height: fit-content;
+    text-align: center;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    margin-bottom: 12px;
+  
+    }
