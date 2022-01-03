@@ -50,3 +50,7 @@
   
     }
 
+    #table>tbody>tr>td,
+    #table>tbody>tr>th {
+      border-bottom: none;
+    }

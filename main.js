@@ -1,3 +1,4 @@
+// const { default: Moralis } = require("moralis/types");
 
 /* Moralis init code */
 const serverUrl = "https://3mxythy48esg.usemoralis.com:2053/server";
@@ -8,16 +9,28 @@ Moralis.start({ serverUrl, appId });
 let user = Moralis.User.current();
 let dex;
 let tokenList;
-
 let isDexInitialized = false;
-
 let nativeBalance = 0;
-
 let nativeTokenAddress = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
-
 let otherBalances = [];
-
 let tokenBalancesMap = new Map();
+
+
+(async function(){
+  await Moralis.initPlugins();
+  dex = Moralis.Plugins.oneInch;
+  // const web3 = await Moralis.enableWeb3();
+  await getSupportedTokens();
+  await populateTable("tokens");
+
+  if(user){
+     await getTokenBalances();
+     await updateTokenBalancesMap(nativeBalance, otherBalances);
+     updateTableBalances();
+  } else {
+    updateTableBalances(true);
+  }
+})();
 
 
 function setToken(key, value){
@@ -30,54 +43,46 @@ function hasToken(key){
 
 async function getTokenBalances() {
   console.log("Token balances fetched...")
-
   const options = { chain: 'polygon'}
-
   var res = await Moralis.Web3API.account.getNativeBalance(options);
-
   nativeBalance = res;
-
   nativeBalance = await Moralis.Units.FromWei(`${nativeBalance.balance}`, 18);
-
   otherBalances = await Moralis.Web3API.account.getTokenBalances(options);
   
 }
 
-function updateTokenBalancesMap(balances){
-  console.log("Balances map updating...")
+function updateTokenBalancesMap(nativeBalance, otherBalances){
   //Native balance
   setToken(nativeTokenAddress, nativeBalance);
 
-  for(let i = 0; i < balances.length; i++){
-      setToken(balances[i].address, balances[i].balance);
+  for(let i = 0; i < otherBalances.length; i++){
+      setToken(otherBalances[i].address, otherBalances[i].balance);
   }
 
   console.log(tokenBalancesMap);
 }
 
 if(user){
-  console.log("If User condition")
   let user = Moralis.User.current();
   document.getElementById("address").innerHTML = user.get("ethAddress");
 
 }
 
 
-(async function(){
-  console.log("Async function() running...")
-if(!isDexInitialized){
-  await Moralis.initPlugins();
-  dex = Moralis.Plugins.oneInch;
-  await getSupportedTokens();
-  await getTokenBalances();
-  updateTokenBalancesMap(otherBalances);
-  await populateTable("tokens");
-  // console.log(tokens);
-  await Moralis.enableWeb3();
-  isDexInitialized = true;
-}
+// (async function(){
+//   console.log("Async function() running...")
+// // if(!isDexInitialized){
 
-})();
+//   await getSupportedTokens();
+//   await getTokenBalances();
+//   updateTokenBalancesMap(otherBalances);
+//   await populateTable("tokens");
+//   // console.log(tokens);
+//   await Moralis.enableWeb3();
+//   isDexInitialized = true;
+// // }
+
+// })();
 
 
 
@@ -95,13 +100,18 @@ $('#table').on('click', 'tbody tr', function(event) {
 
 
 async function login() {
-  console.log("Login...")
     if (!user) {
       user = await Moralis.authenticate({ signingMessage: "Log in using Moralis" })
-        .then(function (user) {
+        .then(async function (user) {
           console.log("logged in user:", user);
+          console.log(await Moralis.getChainId());
+          const chainIdIHex = await Moralis.switchNetwork("0x89");
           console.log(user.get("ethAddress"));
           document.getElementById("address").innerHTML = user.get("ethAddress");
+          //get/update token balances
+          await getTokenBalances();
+          await updateTokenBalancesMap(nativeBalance, otherBalances);
+          updateTableBalances();
 
         })
         .catch(function (error) {
@@ -112,8 +122,9 @@ async function login() {
   
   async function logOut() {
     await Moralis.User.logOut();
-    console.log("logged out");
-    document.getElementById("address").innerHTML = "...";
+    console.log("Logged out");
+    document.getElementById("address").innerText = "";
+    updateTableBalances(true);
 
   }
 
@@ -128,7 +139,7 @@ async function login() {
   
     async function populateTable(element){
       console.log("Populating Table...")
-      updateTokenBalancesMap(otherBalances);
+      // updateTokenBalancesMap(otherBalances);
       for(const [address, name, logoURI] of Object.entries(tokenList.tokens)){
         generateTokenHTML(element, address, name, logoURI);
       }
@@ -175,12 +186,6 @@ async function login() {
       tableDetail3.className = '';
       var qty = document.createElement("p");
       qty.className = "text-start text-end fs-6 fw-bold"
-
-      if(hasToken(address)){
-        qty.innerText = tokenBalancesMap.get(address).toFixed(4);
-      } else {
-        qty.innerText = "0";
-      }
     
       qty.id = `${address}-tokenQty`
 
@@ -192,6 +197,25 @@ async function login() {
       tableRow.appendChild(tableDetail3);
       tbody.appendChild(tableRow);
 
+}
+
+function updateTableBalances(reset = false){
+  var table = document.getElementById('table');
+
+
+  for(let i = 0; i<table.rows.length; i++){
+    var row = table.rows[i];
+    var qty = row.cells[2].children[0];
+    
+    if(reset) {
+      qty.innerText = '';
+      continue;
+    }
+    if(hasToken(row.id))
+      qty.innerText = tokenBalancesMap.get(row.id).toFixed(4);
+    else  
+      qty.innerText = 0;
+  }
 }
 
 
@@ -206,8 +230,6 @@ $("#inputSearch").keyup(function () {
   
 })
 
-
-
   document.getElementById("btn-login").onclick = login;
   document.getElementById("btn-logout").onclick = logOut;
 
@@ -217,11 +239,13 @@ $("#inputSearch").keyup(function () {
 //Make it possible to search/add tokens that isn't in the list 
 
 
-//Create another function to add other balances
-//if token is already in the table (get tableRow IDs and compare) then re-write balance 
-//otherwise, create token detail and update with the balance
 
 
+//Mechanics of the DEX
 
-//Map, Key = Address Value = 0 (initially)
-//
+//When not logged in - populate the list of tokens but not the balances (done)
+//If not logged in - log in (done)
+//If on wrong bridge make 'Swap' button say 'Switch to Polygon', then fire function which changes MM network to Polygon (done).
+//If logged in populate address balances and write quantity to each row for the token they belong to (done)
+
+//Look to create a separate function which writes the balances to each table row, based on what the user has. (done)
