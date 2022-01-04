@@ -13,7 +13,7 @@ var chainID;
 var user = Moralis.User.current();
 var dex;
 var tokenList;
-var isDexInitialized = false;
+// var isDexInitialized = false;
 var nativeBalance = 0;
 var nativeTokenAddress = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 var otherBalances = [];
@@ -22,6 +22,7 @@ var tokenBalancesMap = new Map();
 function setWeb3Environment(){
   web3 = new Web3(window.ethereum);
   monitorNetwork();
+  monitorAccount();
 }
 
  function monitorNetwork(){
@@ -36,12 +37,35 @@ function setWeb3Environment(){
   })
 }
 
+function monitorAccount(){
+  Moralis.onAccountsChanged(async function (accounts) {
+    const confirmed = confirm("Link this address to your account?");
+    if (confirmed) {
+      // await Moralis.link(accounts[0]);
+      document.getElementById("address").innerHTML = accounts[0];
+      chainID = await web3.eth.net.getId();
+      console.log(chainID)
+      if(chainID == 137){
+        await getTokenBalances();
+        await updateTokenBalancesMap(nativeBalance, otherBalances);
+        updateTableBalances();
+      } else {
+        await getTokenBalances();
+        await updateTokenBalancesMap(nativeBalance, otherBalances);
+        updateTableBalances(true);
+      }
+    }
+    
+    });
+    
+}
+
 (async function(){
   
   setWeb3Environment();
   await Moralis.initPlugins();
   dex = Moralis.Plugins.oneInch;
-  // const web3 = await Moralis.enableWeb3();
+  Moralis.enableWeb3();
   await getSupportedTokens();
   await populateTable("tokens");
 
@@ -146,7 +170,7 @@ async function login() {
   async function logOut() {
     await Moralis.User.logOut();
     console.log("Logged out");
-    document.getElementById("address").innerText = "";
+    document.getElementById("address").innerHTML = "";
     updateTableBalances(true);
 
   }
@@ -262,7 +286,12 @@ $("#inputSearch").keyup(function () {
 //Make it possible to search/add tokens that isn't in the list 
 
 
-//Make sure when network is switched while the user is logged-in, the balances are reset from the table
+//Make sure when network is switched while the user is logged-in, the balances are reset from the table (done)
+
+//Authenticate automatically if user is already accessed MetaMask account and show their address without having to click 'Login' button
+//Show the address of the person, especially update it when another account is selected - this means re-populating the balances
+
+//Check if account is linked already
 
 //Mechanics of the DEX
 
