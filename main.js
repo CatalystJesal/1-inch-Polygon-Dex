@@ -25,13 +25,13 @@ function setWeb3Environment(){
 
  function monitorNetwork(){
   Moralis.onChainChanged(async function(){
-    //login();
     chainID = await web3.eth.net.getId();
-     console.log(chainID);
+
        if(chainID == 137){
-         updateTableBalances();
+         login();
        } else {
          updateTableBalances(true);
+         document.getElementById("address").innerHTML = "Wrong Network";
        }
   })
 }
@@ -39,19 +39,6 @@ function setWeb3Environment(){
 function monitorAccount(){
   Moralis.onAccountsChanged(async function (accounts) {
       login();
-      
-      // document.getElementById("address").innerHTML = accounts[0];
-     
-      // if(chainID == 137){
-      //   await getTokenBalances();
-      //   await updateTokenBalancesMap(nativeBalance, otherBalances);
-      //   updateTableBalances();
-      // } else {
-      //   await getTokenBalances();
-      //   await updateTokenBalancesMap(nativeBalance, otherBalances);
-      //   updateTableBalances(true);
-      // }
-    // }
     
     });
     
@@ -154,33 +141,18 @@ async function login() {
   } else {
       user = window.ethereum.selectedAddress;
   }
-      // chainID = await web3.eth.net.getId();
+       chainID = await web3.eth.net.getId();
        console.log(chainID);
 
-      if(chainID != 137){
-        //Switch to Polygon
-        await Moralis.switchNetwork("0x89");
-      } //else {
+      if(chainID == 137){
         document.getElementById("address").innerHTML = window.ethereum.selectedAddress;
         await getTokenBalances();
         await updateTokenBalancesMap(nativeBalance, otherBalances);
         updateTableBalances();
-      //}
-  
-    
-      // console.log(user.get("ethAddress"));
-    
-      
-      console.log(user)
+      }
      
       // console.log(user.get("ethAddress"));
       //get/update token balances
-    
-      
-     
-
-   
-      
      
   }
   
