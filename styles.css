@@ -54,3 +54,8 @@
     #table>tbody>tr>th {
       border-bottom: none;
     }
+
+
+    #btn-login {
+      /* width: fit-content; */
+    }

@@ -1,3 +1,4 @@
+// const { default: Moralis } = require("moralis/types");
 
 
 /* Moralis init code */
@@ -15,6 +16,8 @@ var tokenList;
 var nativeBalance = 0;
 var nativeTokenAddress = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 var otherBalances = [];
+
+var accounts = [];
 
 // var isPolygon = (chainID == 137);
 
@@ -34,26 +37,24 @@ function hasToken(key){
   setWeb3Environment();
   await Moralis.initPlugins();
   dex = Moralis.Plugins.oneInch;
-  Moralis.enableWeb3();
-  await getSupportedTokens();
-  await populateTable("tokens");
-  await login();
+  await updateTokenList();
 
- 
-  console.log(chainID);
-  // console.log(isPolygon);
-
- if(chainID == 137){
-   await init_balances();
- }
 
 })();
 
+let updateTokenList = async function(){
+  await getSupportedTokens();
+  await populateTable("tokens");
+}
 
-async function init_balances(reset){
 
-    await getTokenBalances();
-    await updateTokenBalancesMap(nativeBalance, otherBalances);
+async function init_balances(reset = false){
+
+      if(!reset){
+        await getTokenBalances();
+        await updateTokenBalancesMap(nativeBalance, otherBalances);
+      }
+     
     updateTableBalances(reset);
 }
 
@@ -67,25 +68,32 @@ function setWeb3Environment(){
  function monitorNetwork(){
   Moralis.onChainChanged(async function(){
       chainID = await web3.eth.net.getId();
-      console.log(chainID);
 
        if(chainID == 137){
-         login();
+        document.getElementById("btn-login").innerHTML = user;
          init_balances();
        } else {
          updateTableBalances(true);
-         document.getElementById("address").innerHTML = "Wrong Network";
+         document.getElementById("btn-login").innerHTML = "Switch to Polygon";
        }
   })
 }
 
 function monitorAccount(){
   Moralis.onAccountsChanged(async function (accounts) {
-      login();
+      chainID = await web3.eth.net.getId();
 
-      if(chainID == 137){
-        await init_balances();
+      if(accounts.length < 1){
+        console.log("Logged out of Metamask");
+        await logOut();
+        return;
       } 
+      
+      if (chainID == 137){
+        await init_balances(reset = false);
+      } else {
+        await init_balances(reset = true);
+      }
     });
     
 }
@@ -139,38 +147,34 @@ $('#table').on('click', 'tbody tr', function(event) {
 
 
 
+async function login(){
 
-async function login() {
-    chainID = await web3.eth.net.getId();
+  await Moralis.enableWeb3(); //This brings the pop-up form of MetaMask for user to login (not authentication of an account BIG difference)
+  await Moralis.switchNetwork(0x89); 
 
-    if(chainID != 137){
-      document.getElementById("address").innerHTML = "Wrong Network";
-      return;
-    }
+  console.log(user);
 
-    if (!user) {
+  if(!user){
+  // console.log(await !hasUserPreviouslyAuthenticated(user));
+    user = await Moralis.authenticate({ signingMessage: "Log in using Moralis" }).catch(function (error) {
+      console.log(error);
+    });
 
-      if(await !hasUserPreviouslyAuthenticated(user)){
-        user = await Moralis.authenticate({ signingMessage: "Log in using Moralis" }).catch(function (error) {
-          console.log(error);
-        });
+    console.log("logged in user:", user);
+    
+  } 
 
-        console.log("logged in user:", user);
+  document.getElementById("btn-login").innerText = window.ethereum.selectedAddress;
+  await init_balances();
 
-    }
+}
 
-  } else {
-      user = window.ethereum.selectedAddress;
-  }
-
-  document.getElementById("address").innerHTML = user;
-
-  }
   
   async function logOut() {
     await Moralis.User.logOut();
+    user = null;
     console.log("Logged out");
-    document.getElementById("address").innerHTML = "";
+    document.getElementById("btn-login").innerText = "Connect to Metamask";
     updateTableBalances(true);
 
   }
@@ -258,6 +262,7 @@ function updateTableBalances(reset = false){
       qty.innerText = '';
       continue;
     }
+
     if(hasToken(row.id))
       qty.innerText = tokenBalancesMap.get(row.id).toFixed(4);
     else  
