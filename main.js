@@ -15,7 +15,48 @@ var tokenList;
 var nativeBalance = 0;
 var nativeTokenAddress = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 var otherBalances = [];
+
+// var isPolygon = (chainID == 137);
+
 var tokenBalancesMap = new Map();
+
+function setToken(key, value){
+  tokenBalancesMap.set(key, value);
+}
+
+function hasToken(key){
+  return tokenBalancesMap.has(key);
+}
+
+
+(async function(){
+  
+  setWeb3Environment();
+  await Moralis.initPlugins();
+  dex = Moralis.Plugins.oneInch;
+  Moralis.enableWeb3();
+  await getSupportedTokens();
+  await populateTable("tokens");
+  await login();
+
+ 
+  console.log(chainID);
+  // console.log(isPolygon);
+
+ if(chainID == 137){
+   await init_balances();
+ }
+
+})();
+
+
+async function init_balances(reset){
+
+    await getTokenBalances();
+    await updateTokenBalancesMap(nativeBalance, otherBalances);
+    updateTableBalances(reset);
+}
+
 
 function setWeb3Environment(){
   web3 = new Web3(window.ethereum);
@@ -25,10 +66,12 @@ function setWeb3Environment(){
 
  function monitorNetwork(){
   Moralis.onChainChanged(async function(){
-    chainID = await web3.eth.net.getId();
+      chainID = await web3.eth.net.getId();
+      console.log(chainID);
 
        if(chainID == 137){
          login();
+         init_balances();
        } else {
          updateTableBalances(true);
          document.getElementById("address").innerHTML = "Wrong Network";
@@ -39,10 +82,14 @@ function setWeb3Environment(){
 function monitorAccount(){
   Moralis.onAccountsChanged(async function (accounts) {
       login();
-    
+
+      if(chainID == 137){
+        await init_balances();
+      } 
     });
     
 }
+
 
 async function hasUserPreviouslyAuthenticated(user){
   console.log("Checking for user: " + user);
@@ -55,34 +102,8 @@ async function hasUserPreviouslyAuthenticated(user){
   return false;
 }
 
-(async function(){
-  
-  setWeb3Environment();
-  await Moralis.initPlugins();
-  dex = Moralis.Plugins.oneInch;
-  Moralis.enableWeb3();
-  await getSupportedTokens();
-  await populateTable("tokens");
-  await login();
-
-  // if(user){
-  //    await getTokenBalances();
-  //    await updateTokenBalancesMap(nativeBalance, otherBalances);
-  //    if(chainID == 137)
-  //     updateTableBalances();
-  // } else {
-  //     updateTableBalances(true);
-  // }
-})();
 
 
-function setToken(key, value){
-  tokenBalancesMap.set(key, value);
-}
-
-function hasToken(key){
-  return tokenBalancesMap.has(key);
-}
 
 async function getTokenBalances() {
   console.log("Token balances fetched...")
@@ -105,13 +126,6 @@ function updateTokenBalancesMap(nativeBalance, otherBalances){
   console.log(tokenBalancesMap);
 }
 
-//if(user){
-  //let user = Moralis.User.current();
-  //document.getElementById("address").innerHTML = user.get("ethAddress");
-
-//}
-
-
 
  //This function will be required for the actual DEX swap functionality
 $('#table').on('click', 'tbody tr', function(event) {
@@ -127,6 +141,13 @@ $('#table').on('click', 'tbody tr', function(event) {
 
 
 async function login() {
+    chainID = await web3.eth.net.getId();
+
+    if(chainID != 137){
+      document.getElementById("address").innerHTML = "Wrong Network";
+      return;
+    }
+
     if (!user) {
 
       if(await !hasUserPreviouslyAuthenticated(user)){
@@ -141,19 +162,9 @@ async function login() {
   } else {
       user = window.ethereum.selectedAddress;
   }
-       chainID = await web3.eth.net.getId();
-       console.log(chainID);
 
-      if(chainID == 137){
-        document.getElementById("address").innerHTML = window.ethereum.selectedAddress;
-        await getTokenBalances();
-        await updateTokenBalancesMap(nativeBalance, otherBalances);
-        updateTableBalances();
-      }
-     
-      // console.log(user.get("ethAddress"));
-      //get/update token balances
-     
+  document.getElementById("address").innerHTML = user;
+
   }
   
   async function logOut() {
@@ -175,7 +186,7 @@ async function login() {
   
     async function populateTable(element){
       console.log("Populating Table...")
-      // updateTokenBalancesMap(otherBalances);
+  
       for(const [address, name, logoURI] of Object.entries(tokenList.tokens)){
         generateTokenHTML(element, address, name, logoURI);
       }
