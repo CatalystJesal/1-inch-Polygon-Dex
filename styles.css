@@ -43,7 +43,7 @@
     line-height: 30px;
     height: fit-content;
     text-align: center;
-    font-size: 16px;
+    font-size: 13.5px;
     border: 1px solid #ddd;
     border-radius: 20px;
     margin-bottom: 12px;
@@ -55,7 +55,3 @@
       border-bottom: none;
     }
 
-
-    #btn-login {
-      /* width: fit-content; */
-    }

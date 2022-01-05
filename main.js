@@ -17,9 +17,6 @@ var nativeBalance = 0;
 var nativeTokenAddress = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 var otherBalances = [];
 
-var accounts = [];
-
-// var isPolygon = (chainID == 137);
 
 var tokenBalancesMap = new Map();
 
@@ -38,24 +35,28 @@ function hasToken(key){
   await Moralis.initPlugins();
   dex = Moralis.Plugins.oneInch;
   await updateTokenList();
+  if(user){
+   login();
+  }
 
 
 })();
 
 let updateTokenList = async function(){
   await getSupportedTokens();
-  await populateTable("tokens");
+  await populateTokenForm("tokens");
 }
 
 
 async function init_balances(reset = false){
 
       if(!reset){
-        await getTokenBalances();
-        await updateTokenBalancesMap(nativeBalance, otherBalances);
+        await getAccountBalances();
+        await syncBalancesMap(nativeBalance, otherBalances);
       }
      
-    updateTableBalances(reset);
+    syncTokenFormBalances(reset);
+    document.getElementById("btn-login").innerText = window.ethereum.selectedAddress;
 }
 
 
@@ -70,10 +71,9 @@ function setWeb3Environment(){
       chainID = await web3.eth.net.getId();
 
        if(chainID == 137){
-        document.getElementById("btn-login").innerHTML = user;
          init_balances();
        } else {
-         updateTableBalances(true);
+         syncTokenFormBalances(true);
          document.getElementById("btn-login").innerHTML = "Switch to Polygon";
        }
   })
@@ -113,7 +113,7 @@ async function hasUserPreviouslyAuthenticated(user){
 
 
 
-async function getTokenBalances() {
+async function getAccountBalances() {
   console.log("Token balances fetched...")
   const options = { chain: 'polygon'}
   var res = await Moralis.Web3API.account.getNativeBalance(options);
@@ -123,7 +123,7 @@ async function getTokenBalances() {
   
 }
 
-function updateTokenBalancesMap(nativeBalance, otherBalances){
+function syncBalancesMap(nativeBalance, otherBalances){
   //Native balance
   setToken(nativeTokenAddress, nativeBalance);
 
@@ -164,7 +164,6 @@ async function login(){
     
   } 
 
-  document.getElementById("btn-login").innerText = window.ethereum.selectedAddress;
   await init_balances();
 
 }
@@ -175,7 +174,7 @@ async function login(){
     user = null;
     console.log("Logged out");
     document.getElementById("btn-login").innerText = "Connect to Metamask";
-    updateTableBalances(true);
+    syncTokenFormBalances(true);
 
   }
 
@@ -188,16 +187,16 @@ async function login(){
     console.log(tokenList);
   }
   
-    async function populateTable(element){
+    async function populateTokenForm(element){
       console.log("Populating Table...")
   
       for(const [address, name, logoURI] of Object.entries(tokenList.tokens)){
-        generateTokenHTML(element, address, name, logoURI);
+        createTokenHTML(element, address, name, logoURI);
       }
     }
   
 
-  function generateTokenHTML(element, address, name, logoURI){
+  function createTokenHTML(element, address, name, logoURI){
  
       // console.log(address);
       // console.log(name.symbol);
@@ -250,7 +249,7 @@ async function login(){
 
 }
 
-function updateTableBalances(reset = false){
+function syncTokenFormBalances(reset = false){
   var table = document.getElementById('table');
 
 
