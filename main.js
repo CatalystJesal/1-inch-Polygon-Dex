@@ -1,6 +1,4 @@
-// const { default: Moralis } = require("moralis/types");
 
-// const { default: Moralis } = require("moralis/types");
 
 /* Moralis init code */
 const serverUrl = "https://3mxythy48esg.usemoralis.com:2053/server";
@@ -10,7 +8,7 @@ var web3;
 var chainID;
 
 /* TODO: Add Moralis Authentication code */
-var user = Moralis.User.current();
+var user = window.ethereum.selectedAddress;
 var dex;
 var tokenList;
 // var isDexInitialized = false;
@@ -27,37 +25,47 @@ function setWeb3Environment(){
 
  function monitorNetwork(){
   Moralis.onChainChanged(async function(){
+    //login();
     chainID = await web3.eth.net.getId();
-    console.log(chainID);
-      if(chainID == 137){
-        updateTableBalances();
-      } else {
-        updateTableBalances(true);
-      }
+     console.log(chainID);
+       if(chainID == 137){
+         updateTableBalances();
+       } else {
+         updateTableBalances(true);
+       }
   })
 }
 
 function monitorAccount(){
   Moralis.onAccountsChanged(async function (accounts) {
-    const confirmed = confirm("Link this address to your account?");
-    if (confirmed) {
-      // await Moralis.link(accounts[0]);
-      document.getElementById("address").innerHTML = accounts[0];
-      chainID = await web3.eth.net.getId();
-      console.log(chainID)
-      if(chainID == 137){
-        await getTokenBalances();
-        await updateTokenBalancesMap(nativeBalance, otherBalances);
-        updateTableBalances();
-      } else {
-        await getTokenBalances();
-        await updateTokenBalancesMap(nativeBalance, otherBalances);
-        updateTableBalances(true);
-      }
-    }
+      login();
+      
+      // document.getElementById("address").innerHTML = accounts[0];
+     
+      // if(chainID == 137){
+      //   await getTokenBalances();
+      //   await updateTokenBalancesMap(nativeBalance, otherBalances);
+      //   updateTableBalances();
+      // } else {
+      //   await getTokenBalances();
+      //   await updateTokenBalancesMap(nativeBalance, otherBalances);
+      //   updateTableBalances(true);
+      // }
+    // }
     
     });
     
+}
+
+async function hasUserPreviouslyAuthenticated(user){
+  console.log("Checking for user: " + user);
+  const users = await Moralis.Cloud.run("getUsers");
+  for(let i=0; i<users.length; i++){
+    if(user == users[i]){
+      return true;
+    }
+  }
+  return false;
 }
 
 (async function(){
@@ -68,15 +76,16 @@ function monitorAccount(){
   Moralis.enableWeb3();
   await getSupportedTokens();
   await populateTable("tokens");
+  await login();
 
-  if(user){
-     await getTokenBalances();
-     await updateTokenBalancesMap(nativeBalance, otherBalances);
-     if(chainID == 137)
-      updateTableBalances();
-  } else {
-    updateTableBalances(true);
-  }
+  // if(user){
+  //    await getTokenBalances();
+  //    await updateTokenBalancesMap(nativeBalance, otherBalances);
+  //    if(chainID == 137)
+  //     updateTableBalances();
+  // } else {
+  //     updateTableBalances(true);
+  // }
 })();
 
 
@@ -109,27 +118,11 @@ function updateTokenBalancesMap(nativeBalance, otherBalances){
   console.log(tokenBalancesMap);
 }
 
-if(user){
-  let user = Moralis.User.current();
-  document.getElementById("address").innerHTML = user.get("ethAddress");
+//if(user){
+  //let user = Moralis.User.current();
+  //document.getElementById("address").innerHTML = user.get("ethAddress");
 
-}
-
-
-// (async function(){
-//   console.log("Async function() running...")
-// // if(!isDexInitialized){
-
-//   await getSupportedTokens();
-//   await getTokenBalances();
-//   updateTokenBalancesMap(otherBalances);
-//   await populateTable("tokens");
-//   // console.log(tokens);
-//   await Moralis.enableWeb3();
-//   isDexInitialized = true;
-// // }
-
-// })();
+//}
 
 
 
@@ -148,23 +141,47 @@ $('#table').on('click', 'tbody tr', function(event) {
 
 async function login() {
     if (!user) {
-      user = await Moralis.authenticate({ signingMessage: "Log in using Moralis" })
-        .then(async function (user) {
-          console.log("logged in user:", user);
-          console.log(await Moralis.getChainId());
-          const chainIdIHex = await Moralis.switchNetwork("0x89");
-          console.log(user.get("ethAddress"));
-          document.getElementById("address").innerHTML = user.get("ethAddress");
-          //get/update token balances
-          await getTokenBalances();
-          await updateTokenBalancesMap(nativeBalance, otherBalances);
-          updateTableBalances();
 
-        })
-        .catch(function (error) {
+      if(await !hasUserPreviouslyAuthenticated(user)){
+        user = await Moralis.authenticate({ signingMessage: "Log in using Moralis" }).catch(function (error) {
           console.log(error);
         });
-    } 
+
+        console.log("logged in user:", user);
+
+    }
+
+  } else {
+      user = window.ethereum.selectedAddress;
+  }
+      // chainID = await web3.eth.net.getId();
+       console.log(chainID);
+
+      if(chainID != 137){
+        //Switch to Polygon
+        await Moralis.switchNetwork("0x89");
+      } //else {
+        document.getElementById("address").innerHTML = window.ethereum.selectedAddress;
+        await getTokenBalances();
+        await updateTokenBalancesMap(nativeBalance, otherBalances);
+        updateTableBalances();
+      //}
+  
+    
+      // console.log(user.get("ethAddress"));
+    
+      
+      console.log(user)
+     
+      // console.log(user.get("ethAddress"));
+      //get/update token balances
+    
+      
+     
+
+   
+      
+     
   }
   
   async function logOut() {
@@ -292,6 +309,7 @@ $("#inputSearch").keyup(function () {
 //Show the address of the person, especially update it when another account is selected - this means re-populating the balances
 
 //Check if account is linked already
+//Refreshing page causes table not to update despite being selected on a Metamask account
 
 //Mechanics of the DEX
 
@@ -301,3 +319,13 @@ $("#inputSearch").keyup(function () {
 //If logged in populate address balances and write quantity to each row for the token they belong to (done)
 
 //Look to create a separate function which writes the balances to each table row, based on what the user has. (done)
+
+
+//Check onAccountsChanged whether the address has already authenticated in the past (use Cloud Function returned array to check if they exist) (done)
+//If they exist in the User table already then no need to authenticate/link them again. Just re-populate the balances and change innerText/html of (done)
+//of the current address shown
+
+
+//generally populate balances and show current address if already authenticated/page is ready
+
+
