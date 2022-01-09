@@ -186,17 +186,27 @@ async function login(){
     tokenList = tokens;
     console.log(tokenList);
   }
+
+  async function getTokenMetadata(address){
+      //Get metadata for one token
+    const options = { chain: "polygon", addresses: address };
+    const tokenMetadata = await Moralis.Web3API.token.getTokenMetadata(options);
+
+    return tokenMetadata;
+  }
   
     async function populateTokenForm(element){
       console.log("Populating Table...")
   
       for(const [address, name, logoURI] of Object.entries(tokenList.tokens)){
-        createTokenHTML(element, address, name, logoURI);
+        var tr = createTokenHTML(element, address, name.symbol, name.logoURI);
+        var tbody = document.getElementById(element);
+        addRowToTokenForm(tbody, tr);
       }
     }
   
 
-  function createTokenHTML(element, address, name, logoURI){
+  function createTokenHTML(element, address, symbol, logoURI){
  
       // console.log(address);
       // console.log(name.symbol);
@@ -204,7 +214,7 @@ async function login(){
 
       //TOKEN ITEM
       var tableRow = document.createElement("tr");
-      tableRow.id = `${name.address}`
+      tableRow.id = `${address}`
       var tbody = document.getElementById(element);
 
       //IMAGE
@@ -212,30 +222,34 @@ async function login(){
       tableDetail1.className = '';
       tableDetail1.style.width = '1px';
       var img = document.createElement("img")
-      img.alt = name.symbol;
-      img.src = name.logoURI; 
+      img.alt = symbol;
+      img.src = logoURI; 
       img.style.width = "30px";
       img.style.borderRadius = "30px"
-      img.id = `${address}-${name.symbol}-img`;
+      img.id = `${address}-${symbol}-img`;
 
       tableDetail1.appendChild(img);
 
       //TOKEN NAME
       var tableDetail2 = document.createElement("td");
-      tableDetail2.className = 'align-middle';
-      tableDetail2.style.width = '1px';
+      tableDetail2.className = 'align-middle ';
+      tableDetail2.style.width = '150px';
+      var div = document.createElement("div");
+      div.className = '';
+      div.style.position = 'relative';
       var p = document.createElement("p");
-      p.className = "text-start align-self-center"
-      p.innerText = name.symbol;
+      p.className = "text-start"
+      p.innerText = symbol;
       p.id = `${address}-tokenName`;
-
-      tableDetail2.appendChild(p);
+      
+      div.appendChild(p);
+      tableDetail2.appendChild(div);
 
       //TOKEN QTY
       var tableDetail3 = document.createElement("td");
       tableDetail3.className = '';
       var qty = document.createElement("p");
-      qty.className = "text-start text-end fs-6 fw-bold"
+      qty.className = "text-end fs-6 fw-bold"
     
       qty.id = `${address}-tokenQty`
 
@@ -245,8 +259,13 @@ async function login(){
       tableRow.appendChild(tableDetail1);
       tableRow.appendChild(tableDetail2);
       tableRow.appendChild(tableDetail3);
-      tbody.appendChild(tableRow);
+   
+      return tableRow;
 
+}
+
+function addRowToTokenForm(tbody, tr){
+    tbody.appendChild(tr);
 }
 
 function syncTokenFormBalances(reset = false){
@@ -270,16 +289,82 @@ function syncTokenFormBalances(reset = false){
 }
 
 
-$("#inputSearch").keyup(function () {
-  var value = $(this).val().toUpperCase();
-
-  $("#table tr").filter(function(){
+$("#inputSearch").keyup(async function () {
+  var value = $(this).val().toLowerCase();
+  var tbody1 = document.getElementById("tokens");
+  var tbody2 = document.getElementById("searchTokens");
+  tbody1.style.visibility = "visible";
+  tbody2.style.visibility = "hidden";
+  $("#table tr").filter(async function(){
     var row = $(this)
     
-    row.toggle(row.text().toUpperCase().indexOf(value) > -1)
+    row.toggle(row.text().toLowerCase().indexOf(value) > -1)
+
   })
   
+  if(await web3.utils.isAddress(value)){
+    tbody1.style.visibility = "hidden";
+    tbody2.style.visibility = "visible";
+    var tokenMetaData = await getTokenMetadata(value);
+    if(tokenMetaData.length > 0){
+      // console.log(tokenMetaData[0].address)
+      // console.log(tokenMetaData[0].symbol)
+      // console.log(tokenMetaData[0].thumbnail)
+      var tr = createTokenHTML("searchTokens", tokenMetaData[0].address, tokenMetaData[0].symbol, tokenMetaData[0].thumbnail);
+      if(tokenMetaData[0].symbol){
+        optionalRow(tr);
+      }
+      console.log(tr);
+    }
+  }
 })
+
+function optionalRow(tr){
+  // tr.cells[1].innerText += ` Found by address (Add)`
+  var tbody = document.getElementById("searchTokens");
+  var div = document.createElement("div")
+  var btn = document.createElement("button");
+  btn.style.fontSize = '12px';
+  btn.innerText = "Add";
+  btn.addEventListener('click', function(){
+    addToken(tr, btn);
+  });
+
+  var td = tr.cells[1];
+  //Make this temporary, remove from table if the user doesn't click the add button
+  //Need another table that overlays on top of the main table to show the search results for adding, granted we enter this function
+  //when the search box input is empty then remove that temporary table
+  div.appendChild(btn);
+  td.appendChild(div);
+  tbody.appendChild(tr, this);
+  
+  return tr;
+}
+
+
+function addToken(tr, el){
+  console.log("We are here");
+  tokens = document.getElementById("tokens");
+  var btnDiv = el.closest('div')
+  if(el.innerText == "Add"){
+      el.innerText = "Remove";
+      tokens.appendChild(tr);
+      el.closest('div').style.visibility = "hidden";
+      syncTokenFormBalances();
+      
+  } else {
+       el.innerText = "Add"
+       console.log(btnDiv);
+       el.appendChild(btnDiv);
+       tokens.removechild(tr);
+  }
+
+  //The user can toggle 'Add' 'Remove' multiple times here. The only thing that changes is the UI. If they wish to submit the token,
+  //there must be a change in the input form, any function calls should be done when that happens seperately NOT HERE.
+
+  //Make it so that the search function looks for the address in the main table via tr ID before firing the meta data function to search seperately
+  //That way we can handle whether or not we want to remove custom tokens that were added by toggling their div class (if it exists)
+}
 
   document.getElementById("btn-login").onclick = login;
   document.getElementById("btn-logout").onclick = logOut;

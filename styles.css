@@ -25,12 +25,15 @@
         line-height: 19px;
    }
    
-   #tokenContainer {
+   #tokenContainer, #searchResults {
     height: 75vh; 
     width: 340px; 
     border-radius: 10px;
 
    }
+
+
+
 
    #inputDiv{
        display: flex;
@@ -55,3 +58,8 @@
       border-bottom: none;
     }
 
+
+    .div {
+      width: fit-content;
+      height: fit-content;
+    }
