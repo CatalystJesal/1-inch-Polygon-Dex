@@ -1,6 +1,5 @@
 // const { default: Moralis } = require("moralis/types");
 
-
 /* Moralis init code */
 const serverUrl = "https://3mxythy48esg.usemoralis.com:2053/server";
 const appId = "JAvSEVI7tpwfJlfWMT2RcTeuxGHy1nBODJLVfD6x";
@@ -19,13 +18,14 @@ var otherBalances = [];
 
 
 var tokenBalancesMap = new Map();
+var currTableTokens = new Map();
 
-function setToken(key, value){
-  tokenBalancesMap.set(key, value);
+function setValue(map, key, value){
+  map.set(key, value);
 }
 
-function hasToken(key){
-  return tokenBalancesMap.has(key);
+function hasValue(map, key){
+  return map.has(key);
 }
 
 
@@ -125,10 +125,10 @@ async function getAccountBalances() {
 
 function syncBalancesMap(nativeBalance, otherBalances){
   //Native balance
-  setToken(nativeTokenAddress, nativeBalance);
+  setValue(tokenBalancesMap, nativeTokenAddress, nativeBalance);
 
   for(let i = 0; i < otherBalances.length; i++){
-      setToken(otherBalances[i].address, otherBalances[i].balance);
+      setValue(tokenBalancesMap, otherBalances[i].address, otherBalances[i].balance);
   }
 
   console.log(tokenBalancesMap);
@@ -139,10 +139,10 @@ function syncBalancesMap(nativeBalance, otherBalances){
 $('#table').on('click', 'tbody tr', function(event) {
   $(this).addClass('highlight').siblings().removeClass('highlight');
   var row = $(this);
-  console.log("Address: " + row[0].id);
-  console.log("Image: " + row.children('td')[0].children[0].src);
-  console.log("Token: " + row.children('td')[1].children[0].innerText);
-  console.log("Qty: " + row.children('td')[2].children[0].innerText);
+  // console.log("Address: " + row[0].id);
+  // console.log("Image: " + row.children('td')[0].children[0].src);
+  // console.log("Token: " + row.children('td')[1].children[0].innerText);
+  // console.log("Qty: " + row.children('td')[2].children[0].innerText);
 });
 
 
@@ -265,7 +265,13 @@ async function login(){
 }
 
 function addRowToTokenForm(tbody, tr){
-    tbody.appendChild(tr);
+  // console.log(tr.id)
+  // var trExists = document.querySelector(`#tokenTable > #table > ${tr.id}`)
+  // console.log(trExists);
+    if(!hasValue(currTableTokens, tr.id)){
+      tbody.appendChild(tr);
+      setValue(currTableTokens, tr.id, tr.getElementsByTagName('p')[0].innerText)
+    }
 }
 
 function syncTokenFormBalances(reset = false){
@@ -281,7 +287,7 @@ function syncTokenFormBalances(reset = false){
       continue;
     }
 
-    if(hasToken(row.id))
+    if(hasValue(tokenBalancesMap,row.id))
       qty.innerText = tokenBalancesMap.get(row.id).toFixed(4);
     else  
       qty.innerText = 0;
@@ -291,25 +297,48 @@ function syncTokenFormBalances(reset = false){
 
 $("#inputSearch").keyup(async function () {
   var value = $(this).val().toLowerCase();
-  var tbody1 = document.getElementById("tokens");
-  var tbody2 = document.getElementById("searchTokens");
-  tbody1.style.visibility = "visible";
-  tbody2.style.visibility = "hidden";
+  var tokens = document.getElementById("tokens");
+  var searchTokens = document.getElementById("searchTokens");
+  tokens.style.visibility = "visible";
+  searchTokens.style.visibility = "hidden";
+
+  console.log(searchTokens.rows.length)
+  btn = searchTokens.getElementsByTagName('button')[0]
+
+  // if(searchTokens.rows.length == 1 && btn.innerHTML == "Remove"){
+  //   console.log(searchTokens);
+   
+  //   tokens.appendChild(searchTokens.rows[0]) 
+  //   btn.closest('div').style.visibility = "hidden";
+  //   searchTokens.remove();
+  //   //Add this to the database on Moralis
+
+  // }
+  var isTokenAddress = await web3.utils.isAddress(value)
+
   $("#table tr").filter(async function(){
     var row = $(this)
-    
-    row.toggle(row.text().toLowerCase().indexOf(value) > -1)
+    // console.log(row.attr('id'))
+    if(!isTokenAddress) 
+      row.toggle(row.text().toLowerCase().indexOf(value) > -1)
+    else 
+      row.toggle(row.attr('id').toLowerCase().indexOf(value) > -1)
 
   })
+
+  var el = document.querySelector("#tokens tr:not([style='display: none;'])");
+  // console.log(el);
   
-  if(await web3.utils.isAddress(value)){
-    tbody1.style.visibility = "hidden";
-    tbody2.style.visibility = "visible";
+  if(el == null && isTokenAddress){
+    console.log("we will look here")
+    // tokens.style.visibility = "hidden";
+    if(searchTokens.rows.length > 0){
+      searchTokens.getElementsByTagName("tr").remove();
+    }
+    searchTokens.style.visibility = "visible";
     var tokenMetaData = await getTokenMetadata(value);
     if(tokenMetaData.length > 0){
-      // console.log(tokenMetaData[0].address)
-      // console.log(tokenMetaData[0].symbol)
-      // console.log(tokenMetaData[0].thumbnail)
+
       var tr = createTokenHTML("searchTokens", tokenMetaData[0].address, tokenMetaData[0].symbol, tokenMetaData[0].thumbnail);
       if(tokenMetaData[0].symbol){
         optionalRow(tr);
@@ -317,6 +346,7 @@ $("#inputSearch").keyup(async function () {
       console.log(tr);
     }
   }
+
 })
 
 function optionalRow(tr){
@@ -348,15 +378,16 @@ function addToken(tr, el){
   var btnDiv = el.closest('div')
   if(el.innerText == "Add"){
       el.innerText = "Remove";
-      tokens.appendChild(tr);
-      el.closest('div').style.visibility = "hidden";
-      syncTokenFormBalances();
+      console.log(btnDiv);
+      // tokens.appendChild(tr);
+      // el.closest('div').style.visibility = "hidden";
+      // syncTokenFormBalances();
       
   } else {
        el.innerText = "Add"
        console.log(btnDiv);
-       el.appendChild(btnDiv);
-       tokens.removechild(tr);
+      //  el.appendChild(btnDiv);
+      //  tokens.removechild(tr);
   }
 
   //The user can toggle 'Add' 'Remove' multiple times here. The only thing that changes is the UI. If they wish to submit the token,
@@ -401,3 +432,4 @@ function addToken(tr, el){
 //generally populate balances and show current address if already authenticated/page is ready
 
 
+//Issues with showing token in searchtokens table and not showing erroring
