@@ -294,13 +294,18 @@ function syncTokenFormBalances(reset = false){
   }
 }
 
+//Pasting not included yet
 
-$("#inputSearch").keyup(async function () {
+$("#inputSearch").bind("input"  ,async function () {
   var value = $(this).val().toLowerCase();
   // var tokens = document.getElementById("tokens");
   var searchTokens = document.getElementById("searchTokens");
   searchTokens.style.visibility = "hidden";
   var isTokenAddress = await web3.utils.isAddress(value)
+
+  if(searchTokens.rows.length > 0){
+    searchTokens.deleteRow(0);
+  }
 
   $("#table tr").filter(async function(){
     var row = $(this)
@@ -329,12 +334,10 @@ $("#inputSearch").keyup(async function () {
   console.log(el);
   
   if(el == null && isTokenAddress){
-    console.log("we will look here")
+    // console.log("we will look here")
     searchTokens.style.visibility = "visible";
-    if(searchTokens.rows.length > 0){
-      searchTokens.getElementsByTagName("tr").remove();
-    }
-    searchTokens.style.visibility = "visible";
+    console.log(searchTokens.rows.length)
+    tokens.style.visibility = "visible";
     var tokenMetaData = await getTokenMetadata(value);
     if(tokenMetaData.length > 0){
 
@@ -370,7 +373,7 @@ function addBtnDetail(tr){
 
 function addRemoveSelf(tr, el){
 
-  console.log(tr);
+  // console.log(tr);
 
   console.log("We are here");
   tokens = document.getElementById("tokens");
@@ -384,8 +387,8 @@ function addRemoveSelf(tr, el){
       
   } else {
        el.innerText = "Add"
-       console.log(tr);
-       console.log(tr.id)
+      //  console.log(tr);
+      //  console.log(tr.id)
 
        var remove = $('#tokens tr').index(tr);
        tokens.removeChild(document.getElementById(tr.id))
