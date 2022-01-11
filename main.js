@@ -18,7 +18,7 @@ var otherBalances = [];
 
 
 var tokenBalancesMap = new Map();
-var currTableTokens = new Map();
+var currTokenTableMap = new Map();
 
 function setValue(map, key, value){
   map.set(key, value);
@@ -268,9 +268,9 @@ function addRowToTokenForm(tbody, tr){
   // console.log(tr.id)
   // var trExists = document.querySelector(`#tokenTable > #table > ${tr.id}`)
   // console.log(trExists);
-    if(!hasValue(currTableTokens, tr.id)){
+    if(!hasValue(currTokenTableMap, tr.id)){
       tbody.appendChild(tr);
-      setValue(currTableTokens, tr.id, tr.getElementsByTagName('p')[0].innerText)
+      setValue(currTokenTableMap, tr.id, tr.getElementsByTagName('p')[0].innerText)
     }
 }
 
@@ -297,28 +297,15 @@ function syncTokenFormBalances(reset = false){
 
 $("#inputSearch").keyup(async function () {
   var value = $(this).val().toLowerCase();
-  var tokens = document.getElementById("tokens");
+  // var tokens = document.getElementById("tokens");
   var searchTokens = document.getElementById("searchTokens");
-  tokens.style.visibility = "visible";
   searchTokens.style.visibility = "hidden";
-
-  console.log(searchTokens.rows.length)
-  btn = searchTokens.getElementsByTagName('button')[0]
-
-  // if(searchTokens.rows.length == 1 && btn.innerHTML == "Remove"){
-  //   console.log(searchTokens);
-   
-  //   tokens.appendChild(searchTokens.rows[0]) 
-  //   btn.closest('div').style.visibility = "hidden";
-  //   searchTokens.remove();
-  //   //Add this to the database on Moralis
-
-  // }
   var isTokenAddress = await web3.utils.isAddress(value)
 
   $("#table tr").filter(async function(){
     var row = $(this)
     // console.log(row.attr('id'))
+    // searchTokens.style.visibility = "hidden";
     if(!isTokenAddress) 
       row.toggle(row.text().toLowerCase().indexOf(value) > -1)
     else 
@@ -326,12 +313,24 @@ $("#inputSearch").keyup(async function () {
 
   })
 
+  btn = searchTokens.getElementsByTagName('button')[0]
+
+  // if(searchTokens.rows.length == 1 && btn.innerHTML == "Remove"){
+  // //   console.log(searchTokens);
+   
+  //   // tokens.appendChild(searchTokens.rows[0]) 
+  //   // btn.closest('div').style.visibility = "hidden";
+  //   // searchTokens.remove();
+  // //   //Add this to the database on Moralis
+
+  // }
+
   var el = document.querySelector("#tokens tr:not([style='display: none;'])");
-  // console.log(el);
+  console.log(el);
   
   if(el == null && isTokenAddress){
     console.log("we will look here")
-    // tokens.style.visibility = "hidden";
+    searchTokens.style.visibility = "visible";
     if(searchTokens.rows.length > 0){
       searchTokens.getElementsByTagName("tr").remove();
     }
@@ -341,7 +340,7 @@ $("#inputSearch").keyup(async function () {
 
       var tr = createTokenHTML("searchTokens", tokenMetaData[0].address, tokenMetaData[0].symbol, tokenMetaData[0].thumbnail);
       if(tokenMetaData[0].symbol){
-        optionalRow(tr);
+        addBtnDetail(tr);
       }
       console.log(tr);
     }
@@ -349,7 +348,7 @@ $("#inputSearch").keyup(async function () {
 
 })
 
-function optionalRow(tr){
+function addBtnDetail(tr){
   // tr.cells[1].innerText += ` Found by address (Add)`
   var tbody = document.getElementById("searchTokens");
   var div = document.createElement("div")
@@ -357,13 +356,10 @@ function optionalRow(tr){
   btn.style.fontSize = '12px';
   btn.innerText = "Add";
   btn.addEventListener('click', function(){
-    addToken(tr, btn);
+    addRemoveSelf(tr, btn);
   });
 
   var td = tr.cells[1];
-  //Make this temporary, remove from table if the user doesn't click the add button
-  //Need another table that overlays on top of the main table to show the search results for adding, granted we enter this function
-  //when the search box input is empty then remove that temporary table
   div.appendChild(btn);
   td.appendChild(div);
   tbody.appendChild(tr, this);
@@ -372,30 +368,38 @@ function optionalRow(tr){
 }
 
 
-function addToken(tr, el){
+function addRemoveSelf(tr, el){
+
+  console.log(tr);
+
   console.log("We are here");
   tokens = document.getElementById("tokens");
   var btnDiv = el.closest('div')
   if(el.innerText == "Add"){
       el.innerText = "Remove";
       console.log(btnDiv);
-      // tokens.appendChild(tr);
-      // el.closest('div').style.visibility = "hidden";
-      // syncTokenFormBalances();
+      var trCopy = tr.cloneNode(true);
+      tokens.appendChild(tr);
+      syncTokenFormBalances();
       
   } else {
        el.innerText = "Add"
-       console.log(btnDiv);
-      //  el.appendChild(btnDiv);
-      //  tokens.removechild(tr);
+       console.log(tr);
+       console.log(tr.id)
+
+       var remove = $('#tokens tr').index(tr);
+       tokens.removeChild(document.getElementById(tr.id))
+      //  tokens.removeChild(remove);
+      //  tokens.removeChild(tr.id)
+   
   }
 
+}
   //The user can toggle 'Add' 'Remove' multiple times here. The only thing that changes is the UI. If they wish to submit the token,
   //there must be a change in the input form, any function calls should be done when that happens seperately NOT HERE.
 
   //Make it so that the search function looks for the address in the main table via tr ID before firing the meta data function to search seperately
   //That way we can handle whether or not we want to remove custom tokens that were added by toggling their div class (if it exists)
-}
 
   document.getElementById("btn-login").onclick = login;
   document.getElementById("btn-logout").onclick = logOut;
