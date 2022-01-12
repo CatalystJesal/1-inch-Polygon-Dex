@@ -1,5 +1,9 @@
 // const { default: Moralis } = require("moralis/types");
 
+// const { default: Moralis } = require("moralis/types");
+
+// const { default: Moralis } = require("moralis/types");
+
 /* Moralis init code */
 const serverUrl = "https://3mxythy48esg.usemoralis.com:2053/server";
 const appId = "JAvSEVI7tpwfJlfWMT2RcTeuxGHy1nBODJLVfD6x";
@@ -34,17 +38,20 @@ function hasValue(map, key){
   setWeb3Environment();
   await Moralis.initPlugins();
   dex = Moralis.Plugins.oneInch;
+  user = await Moralis.User.current(); //Get current user from cache
   await updateTokenList();
-  if(user){
-   login();
-  }
 
+  // if(!user){
+    login();
+  // }
 
+ 
 })();
 
 let updateTokenList = async function(){
   await getSupportedTokens();
   await populateTokenForm("tokens");
+
 }
 
 
@@ -110,6 +117,16 @@ async function hasUserPreviouslyAuthenticated(user){
   return false;
 }
 
+async function getTokensDB(){
+  console.log("Loading custom added tokens by this user...");
+  const currentUser = user.attributes.accounts[0];
+  console.log(currentUser);
+  const tokensDB = await Moralis.Cloud.run("getTokensDB", {userAddress: currentUser});
+
+  return tokensDB;
+
+}
+
 
 
 
@@ -148,11 +165,11 @@ $('#table').on('click', 'tbody tr', function(event) {
 
 
 async function login(){
+  
+   //This brings the pop-up form of MetaMask for user to login (not authentication of an account BIG difference)
+  await Moralis.enableWeb3(); 
 
-  await Moralis.enableWeb3(); //This brings the pop-up form of MetaMask for user to login (not authentication of an account BIG difference)
-  await Moralis.switchNetwork(0x89); 
-
-  console.log(user);
+  console.log(user.attributes.accounts[0]);
 
   if(!user){
   // console.log(await !hasUserPreviouslyAuthenticated(user));
@@ -164,6 +181,8 @@ async function login(){
     
   } 
 
+  await Moralis.switchNetwork(0x89); 
+  
   await init_balances();
 
 }
@@ -202,6 +221,17 @@ async function login(){
         var tr = createTokenHTML(element, address, name.symbol, name.logoURI);
         var tbody = document.getElementById(element);
         addRowToTokenForm(tbody, tr);
+      }
+
+      var tokensDB = await getTokensDB();
+
+      console.log(tokensDB);
+
+      for(let i=0; i< tokensDB.length; i++){
+        console.log(tokensDB[i]);
+        var tr = createTokenHTML("tokens", tokensDB[0].contract, tokensDB[0].tokenName, '');
+        tr = addBtnDetail(tr, "tokens", "Remove");
+        // addRowToTokenForm("searchTokens", tr);
       }
     }
   
@@ -309,8 +339,6 @@ $("#inputSearch").bind("input"  ,async function () {
 
   $("#table tr").filter(async function(){
     var row = $(this)
-    // console.log(row.attr('id'))
-    // searchTokens.style.visibility = "hidden";
     if(!isTokenAddress) 
       row.toggle(row.text().toLowerCase().indexOf(value) > -1)
     else 
@@ -319,16 +347,6 @@ $("#inputSearch").bind("input"  ,async function () {
   })
 
   btn = searchTokens.getElementsByTagName('button')[0]
-
-  // if(searchTokens.rows.length == 1 && btn.innerHTML == "Remove"){
-  // //   console.log(searchTokens);
-   
-  //   // tokens.appendChild(searchTokens.rows[0]) 
-  //   // btn.closest('div').style.visibility = "hidden";
-  //   // searchTokens.remove();
-  // //   //Add this to the database on Moralis
-
-  // }
 
   var el = document.querySelector("#tokens tr:not([style='display: none;'])");
   console.log(el);
@@ -343,7 +361,7 @@ $("#inputSearch").bind("input"  ,async function () {
 
       var tr = createTokenHTML("searchTokens", tokenMetaData[0].address, tokenMetaData[0].symbol, tokenMetaData[0].thumbnail);
       if(tokenMetaData[0].symbol){
-        addBtnDetail(tr);
+        addBtnDetail(tr, "searchTokens", "Add");
       }
       console.log(tr);
     }
@@ -351,13 +369,13 @@ $("#inputSearch").bind("input"  ,async function () {
 
 })
 
-function addBtnDetail(tr){
+function addBtnDetail(tr, table, defaultBtn){
   // tr.cells[1].innerText += ` Found by address (Add)`
-  var tbody = document.getElementById("searchTokens");
+  var tbody = document.getElementById(table);
   var div = document.createElement("div")
   var btn = document.createElement("button");
   btn.style.fontSize = '12px';
-  btn.innerText = "Add";
+  btn.innerText = defaultBtn;
   btn.addEventListener('click', function(){
     addRemoveSelf(tr, btn);
   });
@@ -366,12 +384,13 @@ function addBtnDetail(tr){
   div.appendChild(btn);
   td.appendChild(div);
   tbody.appendChild(tr, this);
+  // addRowToTokenForm("searchTokens", tr)
   
   return tr;
 }
 
 
-function addRemoveSelf(tr, el){
+async function addRemoveSelf(tr, el){
 
   // console.log(tr);
 
@@ -380,15 +399,20 @@ function addRemoveSelf(tr, el){
   var btnDiv = el.closest('div')
   if(el.innerText == "Add"){
       el.innerText = "Remove";
-      console.log(btnDiv);
       var trCopy = tr.cloneNode(true);
       tokens.appendChild(tr);
+      addRowToTokenForm(tokens, tr);
+      //add token to the database here
+      console.log(tr.id);
+      var tokenName = tr.cells[1].getElementsByTagName('p')[0].innerText;
+      await addCustomTokenToDatabase(tokenName,tr.id);
       syncTokenFormBalances();
       
   } else {
        el.innerText = "Add"
       //  console.log(tr);
       //  console.log(tr.id)
+      //remove token from the database here
 
        var remove = $('#tokens tr').index(tr);
        tokens.removeChild(document.getElementById(tr.id))
@@ -398,6 +422,25 @@ function addRemoveSelf(tr, el){
   }
 
 }
+
+getAllCustomTokens = async () => {
+  const query = new Moralis.Query('TokensDB');
+  const monster = query.first();
+  return
+}
+
+addCustomTokenToDatabase = async (name, contract) => {
+  const TokensDB = Moralis.Object.extend("TokensDB");
+  const token = new TokensDB();
+  token.set('tokenName', name)
+  token.set('contract', contract)
+  token.set('creatorAddress', user.attributes.accounts[0]);
+
+  //Need to add composite primary key to newly created TokensDB as duplicates are being written (contract, address) - unique
+
+  await token.save();
+}
+
   //The user can toggle 'Add' 'Remove' multiple times here. The only thing that changes is the UI. If they wish to submit the token,
   //there must be a change in the input form, any function calls should be done when that happens seperately NOT HERE.
 
@@ -440,3 +483,9 @@ function addRemoveSelf(tr, el){
 
 
 //Issues with showing token in searchtokens table and not showing erroring
+
+//Store any added tokens to the Moralis DB
+//Build Actual DEX Swapping functionality
+
+
+//Once all done, replicate using REACT
