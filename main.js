@@ -1,8 +1,3 @@
-// const { default: Moralis } = require("moralis/types");
-
-// const { default: Moralis } = require("moralis/types");
-
-// const { default: Moralis } = require("moralis/types");
 
 /* Moralis init code */
 const serverUrl = "https://3mxythy48esg.usemoralis.com:2053/server";
@@ -24,6 +19,8 @@ var otherBalances = [];
 var tokenBalancesMap = new Map();
 var currTokenTableMap = new Map();
 
+var tokensDB;
+
 function setValue(map, key, value){
   map.set(key, value);
 }
@@ -44,8 +41,8 @@ function hasValue(map, key){
   // if(!user){
     login();
   // }
-
- 
+  console.log(tokenBalancesMap)
+  console.log(currTokenTableMap)
 })();
 
 let updateTokenList = async function(){
@@ -156,10 +153,10 @@ function syncBalancesMap(nativeBalance, otherBalances){
 $('#table').on('click', 'tbody tr', function(event) {
   $(this).addClass('highlight').siblings().removeClass('highlight');
   var row = $(this);
-  // console.log("Address: " + row[0].id);
-  // console.log("Image: " + row.children('td')[0].children[0].src);
-  // console.log("Token: " + row.children('td')[1].children[0].innerText);
-  // console.log("Qty: " + row.children('td')[2].children[0].innerText);
+  console.log("Address: " + row[0].id);
+  console.log("Image: " + row.children('td')[0].children[0].src);
+  console.log("Token: " + row.children('td')[1].children[0].innerText);
+  console.log("Qty: " + row.children('td')[2].children[0].innerText);
 });
 
 
@@ -223,13 +220,14 @@ async function login(){
         addRowToTokenForm(tbody, tr);
       }
 
-      var tokensDB = await getTokensDB();
+      tokensDB = await getTokensDB();
+
 
       console.log(tokensDB);
 
       for(let i=0; i< tokensDB.length; i++){
         console.log(tokensDB[i]);
-        var tr = createTokenHTML("tokens", tokensDB[0].contract, tokensDB[0].tokenName, '');
+        var tr = createTokenHTML("tokens", tokensDB[i].attributes.contract, tokensDB[i].attributes.tokenName, '');
         tr = addBtnDetail(tr, "tokens", "Remove");
         // addRowToTokenForm("searchTokens", tr);
       }
@@ -399,13 +397,11 @@ async function addRemoveSelf(tr, el){
   var btnDiv = el.closest('div')
   if(el.innerText == "Add"){
       el.innerText = "Remove";
-      var trCopy = tr.cloneNode(true);
       tokens.appendChild(tr);
       addRowToTokenForm(tokens, tr);
       //add token to the database here
-      console.log(tr.id);
       var tokenName = tr.cells[1].getElementsByTagName('p')[0].innerText;
-      await addCustomTokenToDatabase(tokenName,tr.id);
+      await addTokenToMoralis(tokenName,tr.id);
       syncTokenFormBalances();
       
   } else {
@@ -416,29 +412,51 @@ async function addRemoveSelf(tr, el){
 
        var remove = $('#tokens tr').index(tr);
        tokens.removeChild(document.getElementById(tr.id))
-      //  tokens.removeChild(remove);
-      //  tokens.removeChild(tr.id)
+       await deleteTokenFromMoralis(tr.id);
+
    
   }
 
 }
 
-getAllCustomTokens = async () => {
-  const query = new Moralis.Query('TokensDB');
-  const monster = query.first();
-  return
-}
-
-addCustomTokenToDatabase = async (name, contract) => {
+addTokenToMoralis = async (name, contract) => {
   const TokensDB = Moralis.Object.extend("TokensDB");
   const token = new TokensDB();
-  token.set('tokenName', name)
-  token.set('contract', contract)
-  token.set('creatorAddress', user.attributes.accounts[0]);
+  console.log(contract);
+  if(!isTokenInDB(contract)){
+    token.set('tokenName', name)
+    token.set('contract', contract)
+    token.set('creatorAddress', user.attributes.accounts[0]);
+  }
 
   //Need to add composite primary key to newly created TokensDB as duplicates are being written (contract, address) - unique
 
   await token.save();
+}
+
+deleteTokenFromMoralis = async (contract) => {
+  for(let i = 0; i<tokensDB.length; i++){
+    let object = tokensDB[i]
+    if(contract == object.attributes.contract){
+      object.destroy().then(() => {
+        console.log("The object was deleted from the token database")
+        return;
+      }, (error) => {
+        console.log(error)
+        return;
+      })
+    }
+  }
+}
+
+function isTokenInDB(contract){
+  for(let i = 0; i<tokensDB.length; i++){
+    if(contract == tokensDB[i].attributes.contract){
+      return true
+    }
+  }
+
+  return false;
 }
 
   //The user can toggle 'Add' 'Remove' multiple times here. The only thing that changes is the UI. If they wish to submit the token,
@@ -489,3 +507,7 @@ addCustomTokenToDatabase = async (name, contract) => {
 
 
 //Once all done, replicate using REACT
+
+//Remove extra zeros on tokens with default decimal places.
+//Clean-up code a bit tomorrow
+//Begin creating the actual swapping functionality
