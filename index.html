@@ -16,7 +16,7 @@
     <button id="btn-logout">Logout</button>
     <p id="address"></p>
 
-    <form onSubmit="return false;">
+    <form onSubmit="return false;" style="display: none;">
       <div id="tokenContainer" class = "container p-0 border border-3">
         <p id="selectTokenHeader" class="fw-bold">Select a token</p>
 
@@ -39,11 +39,14 @@
           </table>
         </div>
       </div>
-      
-    
     </div>
       </div>
     </form>
+
+    <div id="dexForm" class="container p-0 border border 3">
+      <input type="text" class ="border-2" id="amountFromInput"  placeholder="0.0">
+      <input type="text" class ="border-2" id="amountToInput"  placeholder="0.0">
+    </div>
     
     <script type="text/javascript" src="./main.js"></script>
   </body>
