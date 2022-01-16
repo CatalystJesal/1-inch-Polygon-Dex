@@ -2,20 +2,92 @@
   background-color: #ececec;
 }
 
-#dexForm {
-  position: absolute;
-  display: block;
-  top: 50%;
-  left: 50%;
-  margin-top: -200px;
-  margin-left: -230px;
-  width: 450px;
-  height: 250px;
+.div {
+  width: fit-content;
+  height: fit-content;
 }
 
-#amountFromInput, #amountToInput {
-  display: block;
+#dexForm {
+  position: relative;
+  top: 100px;
+  /* top: 50%;
+  left: 50%;
+  margin-top: -200px;
+  margin-left: -230px; */
+  width: 600px;
+  height: 290px;
+  /* vertical-align: middle; */
+  /* text-align: center; */
 }
+
+#amountFromInput {
+  display: block;
+  height: 50px;
+  width: 250px;
+  margin-left: 15%;
+  margin-top:50px;
+  top: 50px;
+}
+
+ #amountToInput {
+  display: block;
+  height: 50px;
+  width: 335px;
+  margin-left: 15%;
+  margin-top:50px;
+  top: 50px;
+}
+
+#maxBtn{
+  position: absolute;
+  height: 50px;
+  width: 90px;
+  margin-left: 56%;
+  margin-top: -150px;
+}
+
+#actionBtn{
+  position: absolute;
+  height: auto;
+  width: 250px;
+  margin-left: 30%;
+  margin-top: 50px;
+
+}
+
+#swapFromDropDown {
+  position: absolute;
+  height: 50px;
+  width: 140px;
+  margin-left: 71%;
+  margin-top: -150px;
+  overflow: hidden;
+}
+
+#swapFromDropDown > img {
+  width: 30px;
+  height: 30px;
+}
+
+#swapToDropDown {
+  position: absolute;
+  height: 50px;
+  width: 140px;
+  margin-left: 71%;
+  margin-top: -50px;
+  overflow: hidden;
+}
+
+#swapToDropDown > img {
+  width: 30px;
+  height: 30px;
+}
+
+.icon.icon-page1 {
+  background: url('http://placehold.it/16x16');
+}
+
+https://icodrops.com/wp-content/uploads/2018/06/yT_5Hap9_400x400.png
 
 #selectTokenHeader {
   font-size: 18px;
@@ -64,7 +136,18 @@
   border-bottom: none;
 }
 
-.div {
-  width: fit-content;
-  height: fit-content;
+
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+</style>
+</head>
+<body>

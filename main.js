@@ -249,19 +249,19 @@ function createTokenHTML(element, address, symbol, logoURI) {
   var div = document.createElement("div");
   div.className = "";
   div.style.position = "relative";
-  var p = document.createElement("p");
-  p.className = "text-start";
-  p.innerText = symbol;
-  p.id = `${address}-tokenName`;
+  var span = document.createElement("span");
+  span.className = "text-start";
+  span.innerText = symbol;
+  span.id = `${address}-tokenName`;
 
-  div.appendChild(p);
+  div.appendChild(span);
   tableDetail2.appendChild(div);
 
   //TOKEN QTY
   var tableDetail3 = document.createElement("td");
   tableDetail3.className = "";
   var qty = document.createElement("p");
-  qty.className = "text-end fs-6 fw-bold";
+  qty.className = "text-end fs-6 fw-bold text-end";
   qty.id = `${address}-tokenQty`;
 
   tableDetail3.appendChild(qty);
@@ -382,7 +382,7 @@ async function onClick_AddRemoveToken(tr, el) {
     tokens.appendChild(tr);
     addRowToTokenForm(tokens, tr);
     //add token to the database here
-    var tokenName = tr.cells[1].getElementsByTagName("p")[0].innerText;
+    var tokenName = tr.cells[1].getElementsByTagName("span")[0].innerText;
     await addTokenToMoralis(tokenName, tr.id);
     syncTokenUIBalances();
   } else {
