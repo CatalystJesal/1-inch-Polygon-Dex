@@ -150,6 +150,15 @@ $("#table").on("click", "tbody tr", function (event) {
   console.log("Qty: " + row.children("td")[2].children[0].innerText);
 });
 
+$('#swapFromDropDown').on('show.bs.dropdown', function () {
+  // do something…
+  console.log("open form")
+  
+})
+
+
+
+
 async function login() {
   await Moralis.enableWeb3(); //This brings the pop-up form of MetaMask for user to login (not authentication of an account BIG difference)
   console.log(user.attributes.accounts[0]);

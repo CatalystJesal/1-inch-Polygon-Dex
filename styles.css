@@ -55,7 +55,7 @@
 
 }
 
-#swapFromDropDown {
+#swapFromBtn {
   position: absolute;
   height: 50px;
   width: 140px;
@@ -64,12 +64,12 @@
   overflow: hidden;
 }
 
-#swapFromDropDown > img {
+#swapFromBtn > img {
   width: 30px;
   height: 30px;
 }
 
-#swapToDropDown {
+#swapToBtn{
   position: absolute;
   height: 50px;
   width: 140px;
@@ -78,16 +78,11 @@
   overflow: hidden;
 }
 
-#swapToDropDown > img {
+#swapToBtn > img {
   width: 30px;
   height: 30px;
 }
 
-.icon.icon-page1 {
-  background: url('http://placehold.it/16x16');
-}
-
-https://icodrops.com/wp-content/uploads/2018/06/yT_5Hap9_400x400.png
 
 #selectTokenHeader {
   font-size: 18px;
