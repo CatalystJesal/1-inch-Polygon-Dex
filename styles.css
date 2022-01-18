@@ -2,34 +2,18 @@
   background-color: #ececec;
 }
 
-.div {
-  width: fit-content;
-  height: fit-content;
-}
-
 #dexForm {
-  position: relative;
-  top: 100px;
-  /* top: 50%;
+  position: absolute;
+  display: block;
+  top: 50%;
   left: 50%;
   margin-top: -200px;
-  margin-left: -230px; */
-  width: 600px;
-  height: 290px;
-  /* vertical-align: middle; */
-  /* text-align: center; */
+  margin-left: -230px;
+  width: 450px;
+  height: 250px;
 }
 
-#amountFromInput {
-  display: block;
-  height: 50px;
-  width: 250px;
-  margin-left: 15%;
-  margin-top:50px;
-  top: 50px;
-}
-
- #amountToInput {
+#amountFromInput, #amountToInput {
   display: block;
   height: 50px;
   width: 335px;
@@ -131,18 +115,7 @@
   border-bottom: none;
 }
 
-
-/* Chrome, Safari, Edge, Opera */
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+.div {
+  width: fit-content;
+  height: fit-content;
 }
-
-/* Firefox */
-input[type=number] {
-  -moz-appearance: textfield;
-}
-</style>
-</head>
-<body>

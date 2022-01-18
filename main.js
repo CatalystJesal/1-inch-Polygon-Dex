@@ -31,27 +31,29 @@ function hasValue(map, key) {
   await Moralis.initPlugins();
   dex = Moralis.Plugins.oneInch;
   user = await Moralis.User.current(); //Get current user from cache
-  await updateTokenList();
-  login();
+  // await login();
+  // console.log(user.attributes)
 
+  await updateTokenList();
+  await populateTokenForm("tokens");
+ 
+  
   console.log(tokenBalancesMap);
   console.log(currTokenTableMap);
 })();
 
 let updateTokenList = async function () {
   await getSupportedTokens();
-  await populateTokenForm("tokens");
 };
 
 async function init_balances(reset = false) {
   if (!reset) {
     await getAccountBalances();
     await syncBalancesMap(nativeBalance, otherBalances);
+    document.getElementById("btn-login").innerHTML = user.attributes.accounts[0];
   }
 
   syncTokenUIBalances(reset);
-  document.getElementById("btn-login").innerText =
-    window.ethereum.selectedAddress;
 }
 
 function setWeb3Environment() {
@@ -74,7 +76,7 @@ function monitorNetwork() {
 }
 
 function monitorAccount() {
-  Moralis.onAccountsChanged(async function (accounts) {
+  Moralis.onAccountChanged(async function (accounts) {
     chainID = await web3.eth.net.getId();
 
     if (accounts.length < 1) {
@@ -104,10 +106,10 @@ async function hasUserPreviouslyAuthenticated(user) {
 
 async function getTokensDB() {
   console.log("Loading custom added tokens by this user...");
-  const currentUser = user.attributes.accounts[0];
-  console.log(currentUser);
+  // const currentUser = user.attributes.accounts[0];
+  // console.log(currentUser);
   const tokensDB = await Moralis.Cloud.run("getTokensDB", {
-    userAddress: currentUser,
+    userAddress: user.attributes.accounts[0],
   });
 
   return tokensDB;
@@ -150,28 +152,23 @@ $("#table").on("click", "tbody tr", function (event) {
   console.log("Qty: " + row.children("td")[2].children[0].innerText);
 });
 
-$('#swapFromDropDown').on('show.bs.dropdown', function () {
-  // do something…
-  console.log("open form")
-  
-})
-
 
 
 
 async function login() {
   await Moralis.enableWeb3(); //This brings the pop-up form of MetaMask for user to login (not authentication of an account BIG difference)
-  console.log(user.attributes.accounts[0]);
+  console.log(user);
+  
 
   if (!user) {
-    // console.log(await !hasUserPreviouslyAuthenticated(user));
     user = await Moralis.authenticate({
       signingMessage: "Log in using Moralis",
     }).catch(function (error) {
       console.log(error);
     });
 
-    console.log("logged in user:", user);
+    console.log("logged in user:", user.attributes);
+    // console.log(user.attributes.accounts[0])
   }
 
   await Moralis.switchNetwork(0x89);
@@ -210,6 +207,10 @@ async function populateTokenForm(element) {
     var tr = createTokenHTML(element, address, name.symbol, name.logoURI);
     var tbody = document.getElementById(element);
     addRowToTokenForm(tbody, tr);
+  }
+
+  if(!user){
+    return;
   }
 
   tokensDB = await getTokensDB();
@@ -297,18 +298,19 @@ function addRowToTokenForm(tbody, tr) {
 function syncTokenUIBalances(reset = false) {
   var table = document.getElementById("table");
 
+  
   for (let i = 0; i < table.rows.length; i++) {
     var row = table.rows[i];
     var txtElement = row.cells[2].children[0];
-
     if (reset) {
-      qty.innerText = "";
+      txtElement.innerText = "";
       continue;
     }
 
     if (hasValue(tokenBalancesMap, row.id)) {
       var qty = tokenBalancesMap.get(row.id);
-      txtElement.innerText = qty % 1 == 0 ? qty : qty.toFixed(4);
+      console.log(qty)
+      txtElement.innerText = qty % 1 == 0 ? qty : ""+Number(qty).toFixed(4);
     } else {
       txtElement.innerText = 0;
     }
