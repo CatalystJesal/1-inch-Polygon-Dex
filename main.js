@@ -18,6 +18,8 @@ var currTokenTableMap = new Map();
 
 var tokensDB;
 
+var currActionId;
+
 function setValue(map, key, value) {
   map.set(key, value);
 }
@@ -36,8 +38,7 @@ function hasValue(map, key) {
 
   await updateTokenList();
   await populateTokenForm("tokens");
- 
-  
+
   console.log(tokenBalancesMap);
   console.log(currTokenTableMap);
 })();
@@ -50,7 +51,8 @@ async function init_balances(reset = false) {
   if (!reset) {
     await getAccountBalances();
     await syncBalancesMap(nativeBalance, otherBalances);
-    document.getElementById("btn-login").innerHTML = user.attributes.accounts[0];
+    document.getElementById("btn-login").innerHTML =
+      user.attributes.accounts[0];
   }
 
   syncTokenUIBalances(reset);
@@ -146,52 +148,49 @@ function openTokenForm(btn_id) {
   // console.log("Form opened")
   var dexForm = document.getElementById("dexForm");
   var tokenForm = document.getElementById("tokenForm");
- 
-  dexForm.style.display = 'none';
-  tokenForm.style.removeProperty("display")  
 
+  dexForm.style.display = "none";
+  tokenForm.style.removeProperty("display");
 
-  var seltokenName;
-  var seltokenImg;
+  currActionId = btn_id;
+  // var seltokenName;
+  // var seltokenImg;
   //add display: none style to dexForm
   //remove display: none style to tokenForm
-
-  $("#table").on("click", "tbody tr", function (event) {
-    // var dexForm = document.getElementById("dexForm");
-    // var tokenForm = document.getElementById("tokenForm");
-  
-    $(this).addClass("highlight").siblings().removeClass("highlight");
-    var row = $(this);
-    // console.log("Address: " + row[0].id);
-    // console.log("Image: " + row.children("td")[0].children[0].src);
-    // console.log("Token: " + row.children("td")[1].children[0].innerText);
-    // console.log("Qty: " + row.children("td")[2].children[0].innerText);
-    seltokenName = row.children("td")[1].children[0].innerText
-    seltokenImg =  row.children("td")[0].children[0].src
-    dexForm.style.removeProperty("display")
-    tokenForm.style.display = 'none';
-    
-    var btn = document.getElementById(btn_id)
-
-    // console.log(btn.cells[0].getElementsByTagName("span")[0]);
-    console.log(btn.children[0]);
-    console.log(btn.children[1]);
-    btn.children[0].innerText = seltokenName;
-    btn.children[1].src = seltokenImg;
-  });
-
 }
 
 //This function will be required for the actual DEX swap functionality
 
+$("#table").on("click", "tr", function () {
+  var dexForm = document.getElementById("dexForm");
+  var tokenForm = document.getElementById("tokenForm");
+  var btn = document.getElementById(currActionId);
+  console.log(btn);
 
+  //disable the current selected token the btn shows
+  var row = $(this);
+  row.addClass("highlight").siblings().removeClass("highlight");
 
+ 
+  console.log(row.attr("id"));
+  console.log(btn.children[0].getAttribute("data-address"));
 
+  if (btn.children[0].getAttribute("data-address") != row.attr("id")) {
+    var seltokenName = row.children("td")[1].children[0].innerText;
+    var seltokenImg = row.children("td")[0].children[0].src;
+    dexForm.style.removeProperty("display");
+    tokenForm.style.display = "none";
+
+    btn.children[0].innerText = seltokenName;
+    btn.children[0].setAttribute('data-address', row.attr("id")); 
+    btn.children[1].src = seltokenImg;
+  }
+  
+});
 
 async function login() {
   await Moralis.enableWeb3(); //This brings the pop-up form of MetaMask for user to login (not authentication of an account BIG difference)
   console.log(user);
-  
 
   if (!user) {
     user = await Moralis.authenticate({
@@ -242,7 +241,7 @@ async function populateTokenForm(element) {
     addRowToTokenForm(tbody, tr);
   }
 
-  if(!user){
+  if (!user) {
     return;
   }
 
@@ -331,7 +330,6 @@ function addRowToTokenForm(tbody, tr) {
 function syncTokenUIBalances(reset = false) {
   var table = document.getElementById("table");
 
-  
   for (let i = 0; i < table.rows.length; i++) {
     var row = table.rows[i];
     var txtElement = row.cells[2].children[0];
@@ -342,8 +340,8 @@ function syncTokenUIBalances(reset = false) {
 
     if (hasValue(tokenBalancesMap, row.id)) {
       var qty = tokenBalancesMap.get(row.id);
-      console.log(qty)
-      txtElement.innerText = qty % 1 == 0 ? qty : ""+Number(qty).toFixed(4);
+      console.log(qty);
+      txtElement.innerText = qty % 1 == 0 ? qty : "" + Number(qty).toFixed(4);
     } else {
       txtElement.innerText = 0;
     }
