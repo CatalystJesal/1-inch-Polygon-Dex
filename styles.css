@@ -9,15 +9,16 @@
   left: 50%;
   margin-top: -200px;
   margin-left: -230px;
-  width: 450px;
-  height: 250px;
+  width: 460px;
+  height: 310px;
+  background-color: #ffffff;
 }
 
 #amountFromInput, #amountToInput {
   display: block;
   height: 50px;
   width: 335px;
-  margin-left: 15%;
+  margin-left: 0%;
   margin-top:50px;
   top: 50px;
 }
@@ -26,43 +27,42 @@
   position: absolute;
   height: 50px;
   width: 90px;
-  margin-left: 56%;
-  margin-top: -150px;
+  margin-left: 50%;
+  margin-top: -50px;
 }
 
 #actionBtn{
   position: absolute;
   height: auto;
   width: 250px;
-  margin-left: 30%;
+  margin-left: 22%;
   margin-top: 50px;
 
 }
 
-#swapFromBtn {
+
+#swapFromBtn, #swapToBtn{
   position: absolute;
+  margin-left: 69%;
   height: 50px;
   width: 140px;
-  margin-left: 71%;
-  margin-top: -150px;
   overflow: hidden;
 }
 
-#swapFromBtn > img {
+#swapFromBtn {
+  margin-top: -150px;
+}
+
+/* #swapFromBtn > img {
   width: 30px;
   height: 30px;
-}
+} */
 
 #swapToBtn{
-  position: absolute;
-  height: 50px;
-  width: 140px;
-  margin-left: 71%;
   margin-top: -50px;
-  overflow: hidden;
 }
 
-#swapToBtn > img {
+#swapToBtn > img, #swapFromBtn > img {
   width: 30px;
   height: 30px;
 }
@@ -85,6 +85,9 @@
 
 .table tbody tr td {
   line-height: 19px;
+}
+#tokenContainer {
+  background-color: #ffffff;
 }
 
 #tokenContainer,

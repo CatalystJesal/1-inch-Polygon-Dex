@@ -142,15 +142,48 @@ function syncBalancesMap(nativeBalance, otherBalances) {
   console.log(tokenBalancesMap);
 }
 
+function openTokenForm(btn_id) {
+  // console.log("Form opened")
+  var dexForm = document.getElementById("dexForm");
+  var tokenForm = document.getElementById("tokenForm");
+ 
+  dexForm.style.display = 'none';
+  tokenForm.style.removeProperty("display")  
+
+
+  var seltokenName;
+  var seltokenImg;
+  //add display: none style to dexForm
+  //remove display: none style to tokenForm
+
+  $("#table").on("click", "tbody tr", function (event) {
+    // var dexForm = document.getElementById("dexForm");
+    // var tokenForm = document.getElementById("tokenForm");
+  
+    $(this).addClass("highlight").siblings().removeClass("highlight");
+    var row = $(this);
+    // console.log("Address: " + row[0].id);
+    // console.log("Image: " + row.children("td")[0].children[0].src);
+    // console.log("Token: " + row.children("td")[1].children[0].innerText);
+    // console.log("Qty: " + row.children("td")[2].children[0].innerText);
+    seltokenName = row.children("td")[1].children[0].innerText
+    seltokenImg =  row.children("td")[0].children[0].src
+    dexForm.style.removeProperty("display")
+    tokenForm.style.display = 'none';
+    
+    var btn = document.getElementById(btn_id)
+
+    // console.log(btn.cells[0].getElementsByTagName("span")[0]);
+    console.log(btn.children[0]);
+    console.log(btn.children[1]);
+    btn.children[0].innerText = seltokenName;
+    btn.children[1].src = seltokenImg;
+  });
+
+}
+
 //This function will be required for the actual DEX swap functionality
-$("#table").on("click", "tbody tr", function (event) {
-  $(this).addClass("highlight").siblings().removeClass("highlight");
-  var row = $(this);
-  console.log("Address: " + row[0].id);
-  console.log("Image: " + row.children("td")[0].children[0].src);
-  console.log("Token: " + row.children("td")[1].children[0].innerText);
-  console.log("Qty: " + row.children("td")[2].children[0].innerText);
-});
+
 
 
 
@@ -455,6 +488,8 @@ function isTokenInDB(contract) {
 
 document.getElementById("btn-login").onclick = login;
 document.getElementById("btn-logout").onclick = logOut;
+// document.getElementById("swapFromBtn").onclick = openTokenForm;
+// document.getElementById("swapToBtn").onclick = openTokenForm;
 
 //Make the thumbnails smaller (done)
 //Make table rows smaller (done)
