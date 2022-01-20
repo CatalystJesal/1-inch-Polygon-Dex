@@ -33,18 +33,13 @@ function hasValue(map, key) {
   await Moralis.initPlugins();
   dex = Moralis.Plugins.oneInch;
   user = await Moralis.User.current(); //Get current user from cache
+  await getSupportedTokens();
+  await populateTokenForm("tokens");
   await login();
 
-  await updateTokenList();
-  await populateTokenForm("tokens");
-
-  console.log(tokenBalancesMap);
+ 
   console.log(currTokenTableMap);
 })();
-
-let updateTokenList = async function () {
-  await getSupportedTokens();
-};
 
 async function init_balances(reset = false) {
   if (!reset) {
@@ -116,7 +111,7 @@ async function getTokensDB() {
 }
 
 async function getAccountBalances() {
-  console.log("Token balances fetched...");
+  console.log("Fetch Token balances...");
   const options = { chain: "polygon" };
   var res = await Moralis.Web3API.account.getNativeBalance(options);
   nativeBalance = res;
@@ -125,21 +120,27 @@ async function getAccountBalances() {
   nativeBalance = await Moralis.Units.FromWei(`${nativeBalance.balance}`, 18);
   // nativeBalance = await Moralis.Units.FromWei(`${30}`, 18);
   otherBalances = await Moralis.Web3API.account.getTokenBalances(options);
+  // console.log(otherBalances)
+  console.log("Fetched Token balances...");
 }
 
-function syncBalancesMap(nativeBalance, otherBalances) {
+async function syncBalancesMap(nativeBalance, otherBalances) {
+  console.log("Synchronize Balances Map...");
   //Native balance
   setValue(tokenBalancesMap, nativeTokenAddress, nativeBalance);
 
   for (let i = 0; i < otherBalances.length; i++) {
+
+    var balance = await Moralis.Units.FromWei(`${otherBalances[i].balance}`, 18)
+
     setValue(
       tokenBalancesMap,
-      otherBalances[i].address,
-      otherBalances[i].balance
-    );
+      otherBalances[i].token_address,
+      balance
+      );
   }
 
-  console.log(tokenBalancesMap);
+  console.log("Synchronized Balances Map...");
 }
 
 function openTokenForm(btn_id) {
@@ -315,6 +316,7 @@ function addRowToTokenForm(tbody, tr) {
 }
 
 function syncTokenUIBalances(reset = false) {
+  console.log("Sync Token UI Balances...")
   var table = document.getElementById("table");
 
   for (let i = 0; i < table.rows.length; i++) {
