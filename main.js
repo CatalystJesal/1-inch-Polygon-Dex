@@ -5,7 +5,7 @@ Moralis.start({ serverUrl, appId });
 var web3;
 var chainID;
 
-/* TODO: Add Moralis Authentication code */
+
 var user = window.ethereum.selectedAddress;
 var dex;
 var tokenList;
@@ -33,8 +33,7 @@ function hasValue(map, key) {
   await Moralis.initPlugins();
   dex = Moralis.Plugins.oneInch;
   user = await Moralis.User.current(); //Get current user from cache
-  // await login();
-  // console.log(user.attributes)
+  await login();
 
   await updateTokenList();
   await populateTokenForm("tokens");
@@ -108,8 +107,7 @@ async function hasUserPreviouslyAuthenticated(user) {
 
 async function getTokensDB() {
   console.log("Loading custom added tokens by this user...");
-  // const currentUser = user.attributes.accounts[0];
-  // console.log(currentUser);
+
   const tokensDB = await Moralis.Cloud.run("getTokensDB", {
     userAddress: user.attributes.accounts[0],
   });
@@ -153,10 +151,6 @@ function openTokenForm(btn_id) {
   tokenForm.style.removeProperty("display");
 
   currActionId = btn_id;
-  // var seltokenName;
-  // var seltokenImg;
-  //add display: none style to dexForm
-  //remove display: none style to tokenForm
 }
 
 //This function will be required for the actual DEX swap functionality
@@ -171,7 +165,6 @@ $("#table").on("click", "tr", function () {
   var row = $(this);
   row.addClass("highlight").siblings().removeClass("highlight");
 
- 
   console.log(row.attr("id"));
   console.log(btn.children[0].getAttribute("data-address"));
 
@@ -182,10 +175,9 @@ $("#table").on("click", "tr", function () {
     tokenForm.style.display = "none";
 
     btn.children[0].innerText = seltokenName;
-    btn.children[0].setAttribute('data-address', row.attr("id")); 
+    btn.children[0].setAttribute("data-address", row.attr("id"));
     btn.children[1].src = seltokenImg;
   }
-  
 });
 
 async function login() {
@@ -262,10 +254,6 @@ async function populateTokenForm(element) {
 }
 
 function createTokenHTML(element, address, symbol, logoURI) {
-  // console.log(address);
-  // console.log(name.symbol);
-  // console.log(name.logoURI);
-
   //TOKEN ITEM
   var tableRow = document.createElement("tr");
   tableRow.id = `${address}`;
@@ -315,8 +303,7 @@ function createTokenHTML(element, address, symbol, logoURI) {
 }
 
 function addRowToTokenForm(tbody, tr) {
-  // console.log(tr.id)
-  // console.log(trExists);
+
   if (!hasValue(currTokenTableMap, tr.id)) {
     tbody.appendChild(tr);
     setValue(
@@ -352,7 +339,7 @@ function syncTokenUIBalances(reset = false) {
 
 $("#inputSearch").bind("input", async function () {
   var value = $(this).val().toLowerCase();
-  // var tokens = document.getElementById("tokens");
+
   var searchTokens = document.getElementById("searchTokens");
   searchTokens.style.visibility = "hidden";
   var isTokenAddress = await web3.utils.isAddress(value);
@@ -374,7 +361,7 @@ $("#inputSearch").bind("input", async function () {
   console.log(el);
 
   if (el == null && isTokenAddress) {
-    // console.log("we will look here")
+
     searchTokens.style.visibility = "visible";
     console.log(searchTokens.rows.length);
     tokens.style.visibility = "visible";
@@ -408,15 +395,12 @@ function addBtnToRow(tr, table, defaultBtn) {
   div.appendChild(btn);
   td.appendChild(div);
   tbody.appendChild(tr, this);
-  // addRowToTokenForm("searchTokens", tr)
 
   return tr;
 }
 
 async function onClick_AddRemoveToken(tr, el) {
-  // console.log(tr);
 
-  console.log("We are here");
   tokens = document.getElementById("tokens");
   var btnDiv = el.closest("div");
   if (el.innerText == "Add") {
@@ -429,7 +413,7 @@ async function onClick_AddRemoveToken(tr, el) {
     syncTokenUIBalances();
   } else {
     el.innerText = "Add";
-    //  console.log(tr);
+
     //remove token from the database here
     var remove = $("#tokens tr").index(tr);
     tokens.removeChild(document.getElementById(tr.id));
@@ -478,14 +462,32 @@ function isTokenInDB(contract) {
   return false;
 }
 
-//The user can toggle 'Add' 'Remove' multiple times here. The only thing that changes is the UI. If they wish to submit the token,
-//there must be a change in the input form, any function calls should be done when that happens seperately NOT HERE.
-
-//Make it so that the search function looks for the address in the main table via tr ID before firing the meta data function to search seperately
-//That way we can handle whether or not we want to remove custom tokens that were added by toggling their div class (if it exists)
+function showMaxBalance(tokenAddress){
+  
+document.getElementById("amountFromInput").value = Number(tokenBalancesMap.get(tokenAddress)).toFixed(4);
+}
 
 document.getElementById("btn-login").onclick = login;
 document.getElementById("btn-logout").onclick = logOut;
+
+document.getElementById("swapFromBtn").onclick = function () {
+  openTokenForm(this.id);
+};
+
+document.getElementById("swapToBtn").onclick = function () {
+  openTokenForm(this.id);
+};
+
+document.getElementById("maxBtn").onclick = function () {
+  var swapFromBtn = document.getElementById("swapFromBtn");
+  var tokenAddress = swapFromBtn.children[0].getAttribute("data-address")
+  showMaxBalance(tokenAddress)
+
+} ;
+   
+  
+
+
 // document.getElementById("swapFromBtn").onclick = openTokenForm;
 // document.getElementById("swapToBtn").onclick = openTokenForm;
 
