@@ -464,10 +464,15 @@ function isTokenInDB(contract) {
   return false;
 }
 
-function showMaxBalance(tokenAddress){
+async function showMaxBalance(tokenAddress){
   
 document.getElementById("amountFromInput").value = Number(tokenBalancesMap.get(tokenAddress)).toFixed(4);
+await getQuote() //This function should also be called after the user has stopped typing in the input
+
 }
+
+
+
 
 document.getElementById("btn-login").onclick = login;
 document.getElementById("btn-logout").onclick = logOut;
@@ -486,8 +491,50 @@ document.getElementById("maxBtn").onclick = function () {
   showMaxBalance(tokenAddress)
 
 } ;
-   
-  
+ 
+//One-Inch Plugin functionality
+async function getQuote() {
+  const quote = await Moralis.Plugins.oneInch.quote({
+    chain: 'polygon', // The blockchain you want to use (eth/bsc/polygon)
+    fromTokenAddress: swapFromBtn.children[0].getAttribute("data-address"), // The token you want to swap
+    toTokenAddress: swapToBtn.children[0].getAttribute("data-address"), // The token you want to receive
+    amount: Moralis.Units.Token(document.getElementById("amountFromInput").value, "18"),
+  });
+  console.log(quote);
+  var amountTo = await Moralis.Units.FromWei(`${quote.toTokenAmount}`, 6) 
+  console.log(amountTo)
+  document.getElementById("amountToInput").value = Number(amountTo);
+}
+
+async function hasAllowance() {
+  const allowance = await Moralis.Plugins.oneInch.hasAllowance({
+    chain: 'polygon', // The blockchain you want to use (eth/bsc/polygon)
+    fromTokenAddress: swapFromBtn.children[0].getAttribute("data-address"), // The token you want to swap
+    fromAddress: user.attributes.accounts[0], // Your wallet address
+    amount: document.getElementById("amountFromInput").value,
+  });
+  console.log(`The user has enough allowance: ${allowance}`);
+}
+
+async function approve() {
+  await Moralis.Plugins.oneInch.approve({
+    chain: 'polygon', // The blockchain you want to use (eth/bsc/polygon)
+    tokenAddress: swapFromBtn.children[0].getAttribute("data-address"), // The token you want to swap
+    fromAddress: user.attributes.accounts[0], // Your wallet address
+  });
+}
+
+async function swap() {
+  const receipt = await Moralis.Plugins.oneInch.swap({
+    chain: 'polygon', // The blockchain you want to use (eth/bsc/polygon)
+    fromTokenAddress: swapFromBtn.children[0].getAttribute("data-address"), // The token you want to swap
+    toTokenAddress: swapToBtn.children[0].getAttribute("data-address"), // The token you want to receive
+    amount: document.getElementById("amountFromInput").value,
+    fromAddress: user.attributes.accounts[0], // Your wallet address
+    slippage: 1,
+  });
+  console.log(receipt);
+}
 
 
 // document.getElementById("swapFromBtn").onclick = openTokenForm;
