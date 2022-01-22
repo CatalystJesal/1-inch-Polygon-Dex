@@ -5,7 +5,6 @@ Moralis.start({ serverUrl, appId });
 var web3;
 var chainID;
 
-
 var user = window.ethereum.selectedAddress;
 var dex;
 var tokenList;
@@ -37,7 +36,6 @@ function hasValue(map, key) {
   await populateTokenForm("tokens");
   await login();
 
- 
   console.log(currTokenTableMap);
 })();
 
@@ -130,14 +128,12 @@ async function syncBalancesMap(nativeBalance, otherBalances) {
   setValue(tokenBalancesMap, nativeTokenAddress, nativeBalance);
 
   for (let i = 0; i < otherBalances.length; i++) {
+    var balance = await Moralis.Units.FromWei(
+      `${otherBalances[i].balance}`,
+      18
+    );
 
-    var balance = await Moralis.Units.FromWei(`${otherBalances[i].balance}`, 18)
-
-    setValue(
-      tokenBalancesMap,
-      otherBalances[i].token_address,
-      balance
-      );
+    setValue(tokenBalancesMap, otherBalances[i].token_address, balance);
   }
 
   console.log("Synchronized Balances Map...");
@@ -304,7 +300,6 @@ function createTokenHTML(element, address, symbol, logoURI) {
 }
 
 function addRowToTokenForm(tbody, tr) {
-
   if (!hasValue(currTokenTableMap, tr.id)) {
     tbody.appendChild(tr);
     setValue(
@@ -316,7 +311,7 @@ function addRowToTokenForm(tbody, tr) {
 }
 
 function syncTokenUIBalances(reset = false) {
-  console.log("Sync Token UI Balances...")
+  console.log("Sync Token UI Balances...");
   var table = document.getElementById("table");
 
   for (let i = 0; i < table.rows.length; i++) {
@@ -363,7 +358,6 @@ $("#inputSearch").bind("input", async function () {
   console.log(el);
 
   if (el == null && isTokenAddress) {
-
     searchTokens.style.visibility = "visible";
     console.log(searchTokens.rows.length);
     tokens.style.visibility = "visible";
@@ -402,7 +396,6 @@ function addBtnToRow(tr, table, defaultBtn) {
 }
 
 async function onClick_AddRemoveToken(tr, el) {
-
   tokens = document.getElementById("tokens");
   var btnDiv = el.closest("div");
   if (el.innerText == "Add") {
@@ -464,15 +457,83 @@ function isTokenInDB(contract) {
   return false;
 }
 
-async function showMaxBalance(tokenAddress){
-  
-document.getElementById("amountFromInput").value = Number(tokenBalancesMap.get(tokenAddress)).toFixed(4);
-await getQuote() //This function should also be called after the user has stopped typing in the input
+//One-Inch Plugin functionality
+async function getQuote(from, to, amount) {
+  const quote = await Moralis.Plugins.oneInch.quote({
+    chain: "polygon", // The blockchain you want to use (eth/bsc/polygon)
+    fromTokenAddress: from, // The token you want to swap
+    toTokenAddress: to, // The token you want to receive
+    amount: amount,
+  });
+  console.log(quote);
+  // var amountTo = await Moralis.Units.FromWei(`${quote.toTokenAmount}`, 6)
+  // console.log(amountTo)
 
+  return quote;
 }
 
+async function hasAllowance() {
+  const allowance = await Moralis.Plugins.oneInch.hasAllowance({
+    chain: "polygon", // The blockchain you want to use (eth/bsc/polygon)
+    fromTokenAddress: swapFromBtn.children[0].getAttribute("data-address"), // The token you want to swap
+    fromAddress: user.attributes.accounts[0], // Your wallet address
+    amount: document.getElementById("amountFromInput").value,
+  });
+  console.log(`The user has enough allowance: ${allowance}`);
+}
 
+async function approve() {
+  await Moralis.Plugins.oneInch.approve({
+    chain: "polygon", // The blockchain you want to use (eth/bsc/polygon)
+    tokenAddress: swapFromBtn.children[0].getAttribute("data-address"), // The token you want to swap
+    fromAddress: user.attributes.accounts[0], // Your wallet address
+  });
+}
 
+async function swap() {
+  const receipt = await Moralis.Plugins.oneInch.swap({
+    chain: "polygon", // The blockchain you want to use (eth/bsc/polygon)
+    fromTokenAddress: swapFromBtn.children[0].getAttribute("data-address"), // The token you want to swap
+    toTokenAddress: swapToBtn.children[0].getAttribute("data-address"), // The token you want to receive
+    amount: document.getElementById("amountFromInput").value,
+    fromAddress: user.attributes.accounts[0], // Your wallet address
+    slippage: 1,
+  });
+  console.log(receipt);
+}
+
+async function showMaxBalance(tokenAddress) {
+  document.getElementById("amountFromInput").value = Number(
+    tokenBalancesMap.get(tokenAddress)
+  ).toFixed(4);
+  await getQuote(); //This function should also be called after the user has stopped typing in the input
+}
+
+$("#amountFromInput").bind("input", async function () {
+  // var tokenAddress = swapFromBtn.children[0].getAttribute("data-address")
+  // document.getElementById("amountFromInput").value = Number(tokenBalancesMap.get(tokenAddress)).toFixed(4);
+  // if($(this).val() != '' ){
+
+  var tokenFrom = swapFromBtn.children[0].getAttribute("data-address");
+  var tokenTo = swapToBtn.children[0].getAttribute("data-address");
+  var amount = Moralis.Units.Token(0, "18");
+  var amountTo = "";
+  console.log($(this).val());
+  // if(amount % 1 !=0){
+  if ($(this).val() != "") {
+    // try {
+      var amount = Moralis.Units.Token($(this).val(), "18");
+      var quote = await getQuote(tokenFrom, tokenTo, amount);
+      var amountTo = await Moralis.Units.FromWei(`${quote.toTokenAmount}`, 6);
+    // } catch (error) {
+    //   console.log(error);
+    // }
+  }
+
+  console.log(amount);
+  document.getElementById("amountToInput").value =
+    amount != 0 ? Number(amountTo) : '';
+});
 
 document.getElementById("btn-login").onclick = login;
 document.getElementById("btn-logout").onclick = logOut;
@@ -487,55 +548,9 @@ document.getElementById("swapToBtn").onclick = function () {
 
 document.getElementById("maxBtn").onclick = function () {
   var swapFromBtn = document.getElementById("swapFromBtn");
-  var tokenAddress = swapFromBtn.children[0].getAttribute("data-address")
-  showMaxBalance(tokenAddress)
-
-} ;
- 
-//One-Inch Plugin functionality
-async function getQuote() {
-  const quote = await Moralis.Plugins.oneInch.quote({
-    chain: 'polygon', // The blockchain you want to use (eth/bsc/polygon)
-    fromTokenAddress: swapFromBtn.children[0].getAttribute("data-address"), // The token you want to swap
-    toTokenAddress: swapToBtn.children[0].getAttribute("data-address"), // The token you want to receive
-    amount: Moralis.Units.Token(document.getElementById("amountFromInput").value, "18"),
-  });
-  console.log(quote);
-  var amountTo = await Moralis.Units.FromWei(`${quote.toTokenAmount}`, 6) 
-  console.log(amountTo)
-  document.getElementById("amountToInput").value = Number(amountTo);
-}
-
-async function hasAllowance() {
-  const allowance = await Moralis.Plugins.oneInch.hasAllowance({
-    chain: 'polygon', // The blockchain you want to use (eth/bsc/polygon)
-    fromTokenAddress: swapFromBtn.children[0].getAttribute("data-address"), // The token you want to swap
-    fromAddress: user.attributes.accounts[0], // Your wallet address
-    amount: document.getElementById("amountFromInput").value,
-  });
-  console.log(`The user has enough allowance: ${allowance}`);
-}
-
-async function approve() {
-  await Moralis.Plugins.oneInch.approve({
-    chain: 'polygon', // The blockchain you want to use (eth/bsc/polygon)
-    tokenAddress: swapFromBtn.children[0].getAttribute("data-address"), // The token you want to swap
-    fromAddress: user.attributes.accounts[0], // Your wallet address
-  });
-}
-
-async function swap() {
-  const receipt = await Moralis.Plugins.oneInch.swap({
-    chain: 'polygon', // The blockchain you want to use (eth/bsc/polygon)
-    fromTokenAddress: swapFromBtn.children[0].getAttribute("data-address"), // The token you want to swap
-    toTokenAddress: swapToBtn.children[0].getAttribute("data-address"), // The token you want to receive
-    amount: document.getElementById("amountFromInput").value,
-    fromAddress: user.attributes.accounts[0], // Your wallet address
-    slippage: 1,
-  });
-  console.log(receipt);
-}
-
+  var tokenAddress = swapFromBtn.children[0].getAttribute("data-address");
+  showMaxBalance(tokenAddress);
+};
 
 // document.getElementById("swapFromBtn").onclick = openTokenForm;
 // document.getElementById("swapToBtn").onclick = openTokenForm;
