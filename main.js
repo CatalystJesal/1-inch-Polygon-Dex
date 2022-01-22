@@ -465,7 +465,7 @@ async function getQuote(from, to, amount) {
     toTokenAddress: to, // The token you want to receive
     amount: amount,
   });
-  console.log(quote);
+  // console.log(quote);
   // var amountTo = await Moralis.Units.FromWei(`${quote.toTokenAmount}`, 6)
   // console.log(amountTo)
 
@@ -502,23 +502,19 @@ async function swap() {
   console.log(receipt);
 }
 
-async function showMaxBalance(tokenAddress) {
-  document.getElementById("amountFromInput").value = Number(
-    tokenBalancesMap.get(tokenAddress)
-  ).toFixed(4);
-  await getQuote(); //This function should also be called after the user has stopped typing in the input
+async function showMaxBalance(tokenFrom, tokenTo, amount) {
+  var quote = await getQuote(tokenFrom, tokenTo, amount); //This function should also be called after the user has stopped typing in the input
+  var amountTo = await Moralis.Units.FromWei(`${quote.toTokenAmount}`, 6);
+  document.getElementById("amountToInput").value =  amount != 0 ? amountTo : '';
 }
 
 $("#amountFromInput").bind("input", async function () {
-  // var tokenAddress = swapFromBtn.children[0].getAttribute("data-address")
-  // document.getElementById("amountFromInput").value = Number(tokenBalancesMap.get(tokenAddress)).toFixed(4);
-  // if($(this).val() != '' ){
 
   var tokenFrom = swapFromBtn.children[0].getAttribute("data-address");
   var tokenTo = swapToBtn.children[0].getAttribute("data-address");
   var amount = Moralis.Units.Token(0, "18");
   var amountTo = "";
-  console.log($(this).val());
+  // console.log($(this).val());
   // if(amount % 1 !=0){
   if ($(this).val() != "") {
     // try {
@@ -527,12 +523,12 @@ $("#amountFromInput").bind("input", async function () {
       var amountTo = await Moralis.Units.FromWei(`${quote.toTokenAmount}`, 6);
     // } catch (error) {
     //   console.log(error);
-    // }
-  }
+    }
+  // }
 
-  console.log(amount);
+  // console.log(amount);
   document.getElementById("amountToInput").value =
-    amount != 0 ? Number(amountTo) : '';
+    amount != 0 ? amountTo : '';
 });
 
 document.getElementById("btn-login").onclick = login;
@@ -548,8 +544,12 @@ document.getElementById("swapToBtn").onclick = function () {
 
 document.getElementById("maxBtn").onclick = function () {
   var swapFromBtn = document.getElementById("swapFromBtn");
-  var tokenAddress = swapFromBtn.children[0].getAttribute("data-address");
-  showMaxBalance(tokenAddress);
+  var tokenFrom = swapFromBtn.children[0].getAttribute("data-address");
+  var tokenTo = swapToBtn.children[0].getAttribute("data-address");
+  var amountFromInput = document.getElementById("amountFromInput")
+  amountFromInput.value = Number(tokenBalancesMap.get(tokenFrom)).toFixed(4);
+  var amount = Moralis.Units.Token(amountFromInput.value, "18");
+  showMaxBalance(tokenFrom, tokenTo, amount);
 };
 
 // document.getElementById("swapFromBtn").onclick = openTokenForm;
