@@ -189,7 +189,6 @@ async function login() {
     });
 
     console.log("logged in user:", user.attributes);
-    // console.log(user.attributes.accounts[0])
   }
 
   await Moralis.switchNetwork(0x89);
@@ -205,11 +204,11 @@ async function logOut() {
 }
 
 async function getSupportedTokens() {
-  const tokens = await Moralis.Plugins.oneInch.getSupportedTokens({
+  const result = await Moralis.Plugins.oneInch.getSupportedTokens({
     chain: "polygon", // The blockchain you want to use (eth/bsc/polygon)
   });
 
-  tokenList = tokens;
+  tokenList = result.tokens;
   console.log(tokenList);
 }
 
@@ -224,7 +223,7 @@ async function getTokenMetadata(address) {
 async function populateTokenForm(element) {
   console.log("Populating Table...");
 
-  for (const [address, name, logoURI] of Object.entries(tokenList.tokens)) {
+  for (const [address, name, logoURI] of Object.entries(tokenList)) {
     var tr = createTokenHTML(element, address, name.symbol, name.logoURI);
     var tbody = document.getElementById(element);
     addRowToTokenForm(tbody, tr);
@@ -459,15 +458,15 @@ function isTokenInDB(contract) {
 
 //One-Inch Plugin functionality
 async function getQuote(from, to, amount) {
+
+  amount = amount * 10 ** tokenList[from].decimals;
+
   const quote = await Moralis.Plugins.oneInch.quote({
     chain: "polygon", // The blockchain you want to use (eth/bsc/polygon)
     fromTokenAddress: from, // The token you want to swap
     toTokenAddress: to, // The token you want to receive
     amount: amount,
   });
-  // console.log(quote);
-  // var amountTo = await Moralis.Units.FromWei(`${quote.toTokenAmount}`, 6)
-  // console.log(amountTo)
 
   return quote;
 }
@@ -503,32 +502,54 @@ async function swap() {
 }
 
 async function showMaxBalance(tokenFrom, tokenTo, amount) {
-  var quote = await getQuote(tokenFrom, tokenTo, amount); //This function should also be called after the user has stopped typing in the input
-  var amountTo = await Moralis.Units.FromWei(`${quote.toTokenAmount}`, 6);
-  document.getElementById("amountToInput").value =  amount != 0 ? amountTo : '';
+  try {
+    var quote = await getQuote(tokenFrom, tokenTo, amount); //This function should also be called after the user has stopped typing in the input
+    var amountTo = await Moralis.Units.FromWei(`${quote.toTokenAmount}`, 6);
+    document.getElementById("amountToInput").value =
+      amount != 0 ? amountTo : "";
+  } catch (error) {
+    console.log(error);
+  }
 }
 
 $("#amountFromInput").bind("input", async function () {
-
   var tokenFrom = swapFromBtn.children[0].getAttribute("data-address");
   var tokenTo = swapToBtn.children[0].getAttribute("data-address");
-  var amount = Moralis.Units.Token(0, "18");
-  var amountTo = "";
-  // console.log($(this).val());
-  // if(amount % 1 !=0){
-  if ($(this).val() != "") {
-    // try {
-      var amount = Moralis.Units.Token($(this).val(), "18");
-      var quote = await getQuote(tokenFrom, tokenTo, amount);
-      var amountTo = await Moralis.Units.FromWei(`${quote.toTokenAmount}`, 6);
-    // } catch (error) {
-    //   console.log(error);
-    }
-  // }
 
-  // console.log(amount);
-  document.getElementById("amountToInput").value =
-    amount != 0 ? amountTo : '';
+  var amount = 0;
+  var amountTo = "";
+
+  if ($(this).val() != "") {
+    try {
+      amount = $(this).val()
+      var quote = await getQuote(tokenFrom, tokenTo, amount);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  console.log(amountTo);
+  document.getElementById("amountToInput").value = amount != 0 ? quote.toTokenAmount / 10 ** quote.toToken.decimals : "";
+});
+
+$("#amountToInput").bind("input", async function () {
+  var tokenFrom = swapFromBtn.children[0].getAttribute("data-address");
+  var tokenTo = swapToBtn.children[0].getAttribute("data-address");
+
+  var amount = 0;
+  var amountTo = "";
+
+  if ($(this).val() != "") {
+    try {
+      amount = $(this).val()
+      var quote = await getQuote(tokenTo, tokenFrom, amount);
+      console.log(quote);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  document.getElementById("amountFromInput").value = amount != 0 ? quote.toTokenAmount / 10 ** quote.toToken.decimals : "";
 });
 
 document.getElementById("btn-login").onclick = login;
@@ -546,7 +567,7 @@ document.getElementById("maxBtn").onclick = function () {
   var swapFromBtn = document.getElementById("swapFromBtn");
   var tokenFrom = swapFromBtn.children[0].getAttribute("data-address");
   var tokenTo = swapToBtn.children[0].getAttribute("data-address");
-  var amountFromInput = document.getElementById("amountFromInput")
+  var amountFromInput = document.getElementById("amountFromInput");
   amountFromInput.value = Number(tokenBalancesMap.get(tokenFrom)).toFixed(4);
   var amount = Moralis.Units.Token(amountFromInput.value, "18");
   showMaxBalance(tokenFrom, tokenTo, amount);
