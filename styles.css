@@ -36,7 +36,7 @@
   height: auto;
   width: 250px;
   margin-left: 22%;
-  margin-top: 50px;
+  margin-top: 20px;
 
 }
 
@@ -52,11 +52,6 @@
 #swapFromBtn {
   margin-top: -150px;
 }
-
-/* #swapFromBtn > img {
-  width: 30px;
-  height: 30px;
-} */
 
 #swapToBtn{
   margin-top: -50px;
@@ -121,4 +116,12 @@
 .div {
   width: fit-content;
   height: fit-content;
+}
+
+
+#closeBtn {
+  position:relative;
+  left: 290px;
+  top: -40px;
+  
 }

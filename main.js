@@ -156,14 +156,14 @@ $("#table").on("click", "tr", function () {
   var dexForm = document.getElementById("dexForm");
   var tokenForm = document.getElementById("tokenForm");
   var btn = document.getElementById(currActionId);
-  console.log(btn);
+  // console.log(btn);
 
   //disable the current selected token the btn shows
   var row = $(this);
   row.addClass("highlight").siblings().removeClass("highlight");
 
-  console.log(row.attr("id"));
-  console.log(btn.children[0].getAttribute("data-address"));
+  // console.log(row.attr("id"));
+  // console.log(btn.children[0].getAttribute("data-address"));
 
   if (btn.children[0].getAttribute("data-address") != row.attr("id")) {
     var seltokenName = row.children("td")[1].children[0].innerText;
@@ -354,7 +354,7 @@ $("#inputSearch").bind("input", async function () {
   btn = searchTokens.getElementsByTagName("button")[0];
 
   var el = document.querySelector("#tokens tr:not([style='display: none;'])");
-  console.log(el);
+  // console.log(el);
 
   if (el == null && isTokenAddress) {
     searchTokens.style.visibility = "visible";
@@ -458,8 +458,15 @@ function isTokenInDB(contract) {
 
 //One-Inch Plugin functionality
 async function getQuote(from, to, amount) {
-
-  amount = amount * 10 ** tokenList[from].decimals;
+  console.log(tokenList)
+  console.log(otherBalances)
+  console.log(tokenBalancesMap)
+  if(tokenList[from] === undefined){
+    var index = otherBalances.findIndex(x => x.token_address === from);
+    amount = amount * 10 ** otherBalances[index].decimals;
+  } else {
+    amount = amount * 10 ** tokenList[from].decimals;
+  }
 
   const quote = await Moralis.Plugins.oneInch.quote({
     chain: "polygon", // The blockchain you want to use (eth/bsc/polygon)
@@ -468,45 +475,74 @@ async function getQuote(from, to, amount) {
     amount: amount,
   });
 
+  document.getElementById("estimatedGas").innerHTML = "Estimated Gas: " + `${quote.estimatedGas}` 
+
   return quote;
 }
 
-async function hasAllowance() {
+async function hasAllowance(from, wallet, amount) {
+  if(tokenList[from] === undefined){
+    var index = otherBalances.findIndex(x => x.token_address === from);
+    amount = amount * 10 ** otherBalances[index].decimals;
+  } else {
+    amount = amount * 10 ** tokenList[from].decimals;
+  }
+
   const allowance = await Moralis.Plugins.oneInch.hasAllowance({
     chain: "polygon", // The blockchain you want to use (eth/bsc/polygon)
-    fromTokenAddress: swapFromBtn.children[0].getAttribute("data-address"), // The token you want to swap
-    fromAddress: user.attributes.accounts[0], // Your wallet address
-    amount: document.getElementById("amountFromInput").value,
+    fromTokenAddress: from, // The token you want to swap
+    fromAddress: wallet, //user.attributes.accounts[0], // Your wallet address
+    amount: amount //document.getElementById("amountFromInput").value,
   });
-  console.log(`The user has enough allowance: ${allowance}`);
+
+  console.log(allowance)
+
+ return allowance;
 }
 
-async function approve() {
+async function approve(from, wallet) {
   await Moralis.Plugins.oneInch.approve({
     chain: "polygon", // The blockchain you want to use (eth/bsc/polygon)
-    tokenAddress: swapFromBtn.children[0].getAttribute("data-address"), // The token you want to swap
-    fromAddress: user.attributes.accounts[0], // Your wallet address
+    tokenAddress: from, //swapFromBtn.children[0].getAttribute("data-address"), // The token you want to swap
+    fromAddress: wallet //user.attributes.accounts[0], // Your wallet address
   });
 }
 
-async function swap() {
+async function swap(from, to, amount) {
+
+  allowance = await !hasAllowance(from, user.attributes.accounts[0], amount)
+  if(!allowance){
+    console.log("Are we here")
+    approve(from, user.attributes.accounts[0])
+  }
+  //  else {
+    if(tokenList[from] === undefined){
+      var index = otherBalances.findIndex(x => x.token_address === from);
+      amount = amount * 10 ** otherBalances[index].decimals;
+    } else {
+      amount = amount * 10 ** tokenList[from].decimals;
+    }
+    console.log(amount)
+  
   const receipt = await Moralis.Plugins.oneInch.swap({
     chain: "polygon", // The blockchain you want to use (eth/bsc/polygon)
-    fromTokenAddress: swapFromBtn.children[0].getAttribute("data-address"), // The token you want to swap
-    toTokenAddress: swapToBtn.children[0].getAttribute("data-address"), // The token you want to receive
-    amount: document.getElementById("amountFromInput").value,
+    fromTokenAddress: from, // The token you want to swap
+    toTokenAddress: to, // The token you want to receive
+    amount: amount,
     fromAddress: user.attributes.accounts[0], // Your wallet address
     slippage: 1,
   });
   console.log(receipt);
+
 }
 
 async function showMaxBalance(tokenFrom, tokenTo, amount) {
   try {
     var quote = await getQuote(tokenFrom, tokenTo, amount); //This function should also be called after the user has stopped typing in the input
-    var amountTo = await Moralis.Units.FromWei(`${quote.toTokenAmount}`, 6);
+    // var amountTo = await Moralis.Units.FromWei(`${quote.toTokenAmount}`, 6);
+    console.log(quote)
     document.getElementById("amountToInput").value =
-      amount != 0 ? amountTo : "";
+      amount != 0 ? quote.toTokenAmount / 10 ** quote.toToken.decimals : "";
   } catch (error) {
     console.log(error);
   }
@@ -517,19 +553,21 @@ $("#amountFromInput").bind("input", async function () {
   var tokenTo = swapToBtn.children[0].getAttribute("data-address");
 
   var amount = 0;
-  var amountTo = "";
+  var amountTo = 0;
 
   if ($(this).val() != "") {
     try {
       amount = $(this).val()
       var quote = await getQuote(tokenFrom, tokenTo, amount);
+      console.log(quote);
+      amountTo = quote.toTokenAmount / 10 ** quote.toToken.decimals
     } catch (error) {
       console.log(error);
     }
   }
 
   console.log(amountTo);
-  document.getElementById("amountToInput").value = amount != 0 ? quote.toTokenAmount / 10 ** quote.toToken.decimals : "";
+  document.getElementById("amountToInput").value = amount != 0 ? amountTo : "";
 });
 
 $("#amountToInput").bind("input", async function () {
@@ -537,19 +575,20 @@ $("#amountToInput").bind("input", async function () {
   var tokenTo = swapToBtn.children[0].getAttribute("data-address");
 
   var amount = 0;
-  var amountTo = "";
+  var amountTo = 0;
 
   if ($(this).val() != "") {
     try {
       amount = $(this).val()
       var quote = await getQuote(tokenTo, tokenFrom, amount);
       console.log(quote);
+      amountTo = quote.toTokenAmount / 10 ** quote.toToken.decimals
     } catch (error) {
       console.log(error);
     }
   }
 
-  document.getElementById("amountFromInput").value = amount != 0 ? quote.toTokenAmount / 10 ** quote.toToken.decimals : "";
+  document.getElementById("amountFromInput").value = amount != 0 ? amountTo : "";
 });
 
 document.getElementById("btn-login").onclick = login;
@@ -563,53 +602,29 @@ document.getElementById("swapToBtn").onclick = function () {
   openTokenForm(this.id);
 };
 
+document.getElementById("closeBtn").onclick = function () {
+  document.getElementById("tokenForm").style.display = "none"
+  document.getElementById("dexForm").style.removeProperty("display");
+}
+
 document.getElementById("maxBtn").onclick = function () {
   var swapFromBtn = document.getElementById("swapFromBtn");
   var tokenFrom = swapFromBtn.children[0].getAttribute("data-address");
   var tokenTo = swapToBtn.children[0].getAttribute("data-address");
   var amountFromInput = document.getElementById("amountFromInput");
   amountFromInput.value = Number(tokenBalancesMap.get(tokenFrom)).toFixed(4);
-  var amount = Moralis.Units.Token(amountFromInput.value, "18");
-  showMaxBalance(tokenFrom, tokenTo, amount);
+
+  showMaxBalance(tokenFrom, tokenTo, amountFromInput.value);
 };
 
-// document.getElementById("swapFromBtn").onclick = openTokenForm;
-// document.getElementById("swapToBtn").onclick = openTokenForm;
+document.getElementById("actionBtn").onclick = function(){
+  var tokenFrom = swapFromBtn.children[0].getAttribute("data-address");
+  var tokenTo = swapToBtn.children[0].getAttribute("data-address");
 
-//Make the thumbnails smaller (done)
-//Make table rows smaller (done)
-//Show actual quantity of the tokens user has (done)
-//Make it possible to search/add tokens that isn't in the list
+  var amount = document.getElementById("amountFromInput").value;
+  swap(tokenFrom, tokenTo, amount);
+}
 
-//Make sure when network is switched while the user is logged-in, the balances are reset from the table (done)
-
-//Authenticate automatically if user is already accessed MetaMask account and show their address without having to click 'Login' button
-//Show the address of the person, especially update it when another account is selected - this means re-populating the balances
-
-//Check if account is linked already
-//Refreshing page causes table not to update despite being selected on a Metamask account
-
-//Mechanics of the DEX
-
-//When not logged in - populate the list of tokens but not the balances (done)
-//If not logged in - log in (done)
-//If on wrong bridge make 'Swap' button say 'Switch to Polygon', then fire function which changes MM network to Polygon (done).
-//If logged in populate address balances and write quantity to each row for the token they belong to (done)
-
-//Look to create a separate function which writes the balances to each table row, based on what the user has. (done)
-
-//Check onAccountsChanged whether the address has already authenticated in the past (use Cloud Function returned array to check if they exist) (done)
-//If they exist in the User table already then no need to authenticate/link them again. Just re-populate the balances and change innerText/html of (done)
-//of the current address shown
-
-//generally populate balances and show current address if already authenticated/page is ready
-
-//Issues with showing token in searchtokens table and not showing erroring
-
-//Store any added tokens to the Moralis DB
-//Build Actual DEX Swapping functionality
-
-//Once all done, replicate using REACT
-
-//Clean-up code a bit tomorrow
-//Begin creating the actual swapping functionality
+//add extra property to tokenBalancesMap, containing decimal property (may need to re-work this)
+//otherwise if above is not possible then do a function to check if token is inside tokenList/otherBalances if not then get decimals value from 
+//the other list and proceed with swap

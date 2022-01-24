@@ -31,14 +31,15 @@
           <img id="swapToImg" src="https://tokens.1inch.io/0xdac17f958d2ee523a2206206994597c13d831ec7.png" class=".img-thumbnail img-fluid" alt="...">
         </button>
       </div>
-   
+      <span id="estimatedGas"></span>
+      <br>
       <button id="actionBtn">Swap</button>
     </div>
 
-    <form id="tokenForm" onSubmit="return false;" style="display: none;" >
+    <form id="tokenForm" onSubmit="return false;"  style="display: none;">
       <div id="tokenContainer" class = "container p-0 border border-3">
         <p id="selectTokenHeader" class="fw-bold">Select a token</p>
-
+        <button id="closeBtn" type="button" class="btn-close " aria-label="Close"></button>
         <div id="inputDiv">
           <input type="text" class ="border-2" id="inputSearch"  placeholder="Search name or paste address">
         </div>
