@@ -1,5 +1,4 @@
 /* Moralis init code */
-require('dotenv').config()
 const serverUrl = "https://3mxythy48esg.usemoralis.com:2053/server";
 const appId = "JAvSEVI7tpwfJlfWMT2RcTeuxGHy1nBODJLVfD6x";
 Moralis.start({ serverUrl, appId });
