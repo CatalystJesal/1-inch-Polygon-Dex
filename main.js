@@ -1,9 +1,12 @@
 /* Moralis init code */
+require('dotenv').config()
 const serverUrl = "https://3mxythy48esg.usemoralis.com:2053/server";
 const appId = "JAvSEVI7tpwfJlfWMT2RcTeuxGHy1nBODJLVfD6x";
 Moralis.start({ serverUrl, appId });
 var web3;
 var chainID;
+
+console.log(process.env)
 
 var user = window.ethereum.selectedAddress;
 var dex;
@@ -116,9 +119,9 @@ async function getAccountBalances() {
   console.log(nativeBalance.balance);
   console.log(await Moralis.Web3API.account);
   nativeBalance = await Moralis.Units.FromWei(`${nativeBalance.balance}`, 18);
-  // nativeBalance = await Moralis.Units.FromWei(`${30}`, 18);
+
   otherBalances = await Moralis.Web3API.account.getTokenBalances(options);
-  // console.log(otherBalances)
+
   console.log("Fetched Token balances...");
 }
 
@@ -140,7 +143,7 @@ async function syncBalancesMap(nativeBalance, otherBalances) {
 }
 
 function openTokenForm(btn_id) {
-  // console.log("Form opened")
+
   var dexForm = document.getElementById("dexForm");
   var tokenForm = document.getElementById("tokenForm");
 
@@ -150,20 +153,15 @@ function openTokenForm(btn_id) {
   currActionId = btn_id;
 }
 
-//This function will be required for the actual DEX swap functionality
-
 $("#table").on("click", "tr", function () {
   var dexForm = document.getElementById("dexForm");
   var tokenForm = document.getElementById("tokenForm");
   var btn = document.getElementById(currActionId);
-  // console.log(btn);
 
   //disable the current selected token the btn shows
   var row = $(this);
   row.addClass("highlight").siblings().removeClass("highlight");
 
-  // console.log(row.attr("id"));
-  // console.log(btn.children[0].getAttribute("data-address"));
 
   if (btn.children[0].getAttribute("data-address") != row.attr("id")) {
     var seltokenName = row.children("td")[1].children[0].innerText;
@@ -354,7 +352,6 @@ $("#inputSearch").bind("input", async function () {
   btn = searchTokens.getElementsByTagName("button")[0];
 
   var el = document.querySelector("#tokens tr:not([style='display: none;'])");
-  // console.log(el);
 
   if (el == null && isTokenAddress) {
     searchTokens.style.visibility = "visible";
@@ -458,11 +455,11 @@ function isTokenInDB(contract) {
 
 //One-Inch Plugin functionality
 async function getQuote(from, to, amount) {
-  console.log(tokenList)
-  console.log(otherBalances)
-  console.log(tokenBalancesMap)
-  if(tokenList[from] === undefined){
-    var index = otherBalances.findIndex(x => x.token_address === from);
+  console.log(tokenList);
+  console.log(otherBalances);
+  console.log(tokenBalancesMap);
+  if (tokenList[from] === undefined) {
+    var index = otherBalances.findIndex((x) => x.token_address === from);
     amount = amount * 10 ** otherBalances[index].decimals;
   } else {
     amount = amount * 10 ** tokenList[from].decimals;
@@ -475,14 +472,15 @@ async function getQuote(from, to, amount) {
     amount: amount,
   });
 
-  document.getElementById("estimatedGas").innerHTML = "Estimated Gas: " + `${quote.estimatedGas}` 
+  document.getElementById("estimatedGas").innerHTML =
+    "Estimated Gas: " + `${quote.estimatedGas}`;
 
   return quote;
 }
 
 async function hasAllowance(from, wallet, amount) {
-  if(tokenList[from] === undefined){
-    var index = otherBalances.findIndex(x => x.token_address === from);
+  if (tokenList[from] === undefined) {
+    var index = otherBalances.findIndex((x) => x.token_address === from);
     amount = amount * 10 ** otherBalances[index].decimals;
   } else {
     amount = amount * 10 ** tokenList[from].decimals;
@@ -492,38 +490,37 @@ async function hasAllowance(from, wallet, amount) {
     chain: "polygon", // The blockchain you want to use (eth/bsc/polygon)
     fromTokenAddress: from, // The token you want to swap
     fromAddress: wallet, //user.attributes.accounts[0], // Your wallet address
-    amount: amount //document.getElementById("amountFromInput").value,
+    amount: amount, //document.getElementById("amountFromInput").value,
   });
 
-  console.log(allowance)
+  console.log(allowance);
 
- return allowance;
+  return allowance;
 }
 
 async function approve(from, wallet) {
   await Moralis.Plugins.oneInch.approve({
     chain: "polygon", // The blockchain you want to use (eth/bsc/polygon)
     tokenAddress: from, //swapFromBtn.children[0].getAttribute("data-address"), // The token you want to swap
-    fromAddress: wallet //user.attributes.accounts[0], // Your wallet address
+    fromAddress: wallet, //user.attributes.accounts[0], // Your wallet address
   });
 }
 
 async function swap(from, to, amount) {
-
-  allowance = await !hasAllowance(from, user.attributes.accounts[0], amount)
-  if(!allowance){
-    console.log("Are we here")
-    approve(from, user.attributes.accounts[0])
+  allowance = await !hasAllowance(from, user.attributes.accounts[0], amount);
+  if (!allowance) {
+    console.log("Are we here");
+    approve(from, user.attributes.accounts[0]);
   }
   //  else {
-    if(tokenList[from] === undefined){
-      var index = otherBalances.findIndex(x => x.token_address === from);
-      amount = amount * 10 ** otherBalances[index].decimals;
-    } else {
-      amount = amount * 10 ** tokenList[from].decimals;
-    }
-    console.log(amount)
-  
+  if (tokenList[from] === undefined) {
+    var index = otherBalances.findIndex((x) => x.token_address === from);
+    amount = amount * 10 ** otherBalances[index].decimals;
+  } else {
+    amount = amount * 10 ** tokenList[from].decimals;
+  }
+  console.log(amount);
+
   const receipt = await Moralis.Plugins.oneInch.swap({
     chain: "polygon", // The blockchain you want to use (eth/bsc/polygon)
     fromTokenAddress: from, // The token you want to swap
@@ -533,14 +530,13 @@ async function swap(from, to, amount) {
     slippage: 1,
   });
   console.log(receipt);
-
 }
 
 async function showMaxBalance(tokenFrom, tokenTo, amount) {
   try {
     var quote = await getQuote(tokenFrom, tokenTo, amount); //This function should also be called after the user has stopped typing in the input
-    // var amountTo = await Moralis.Units.FromWei(`${quote.toTokenAmount}`, 6);
-    console.log(quote)
+
+    console.log(quote);
     document.getElementById("amountToInput").value =
       amount != 0 ? quote.toTokenAmount / 10 ** quote.toToken.decimals : "";
   } catch (error) {
@@ -557,10 +553,10 @@ $("#amountFromInput").bind("input", async function () {
 
   if ($(this).val() != "") {
     try {
-      amount = $(this).val()
+      amount = $(this).val();
       var quote = await getQuote(tokenFrom, tokenTo, amount);
       console.log(quote);
-      amountTo = quote.toTokenAmount / 10 ** quote.toToken.decimals
+      amountTo = quote.toTokenAmount / 10 ** quote.toToken.decimals;
     } catch (error) {
       console.log(error);
     }
@@ -579,16 +575,17 @@ $("#amountToInput").bind("input", async function () {
 
   if ($(this).val() != "") {
     try {
-      amount = $(this).val()
+      amount = $(this).val();
       var quote = await getQuote(tokenTo, tokenFrom, amount);
       console.log(quote);
-      amountTo = quote.toTokenAmount / 10 ** quote.toToken.decimals
+      amountTo = quote.toTokenAmount / 10 ** quote.toToken.decimals;
     } catch (error) {
       console.log(error);
     }
   }
 
-  document.getElementById("amountFromInput").value = amount != 0 ? amountTo : "";
+  document.getElementById("amountFromInput").value =
+    amount != 0 ? amountTo : "";
 });
 
 document.getElementById("btn-login").onclick = login;
@@ -603,9 +600,9 @@ document.getElementById("swapToBtn").onclick = function () {
 };
 
 document.getElementById("closeBtn").onclick = function () {
-  document.getElementById("tokenForm").style.display = "none"
+  document.getElementById("tokenForm").style.display = "none";
   document.getElementById("dexForm").style.removeProperty("display");
-}
+};
 
 document.getElementById("maxBtn").onclick = function () {
   var swapFromBtn = document.getElementById("swapFromBtn");
@@ -617,14 +614,11 @@ document.getElementById("maxBtn").onclick = function () {
   showMaxBalance(tokenFrom, tokenTo, amountFromInput.value);
 };
 
-document.getElementById("actionBtn").onclick = function(){
+document.getElementById("actionBtn").onclick = function () {
   var tokenFrom = swapFromBtn.children[0].getAttribute("data-address");
   var tokenTo = swapToBtn.children[0].getAttribute("data-address");
 
   var amount = document.getElementById("amountFromInput").value;
   swap(tokenFrom, tokenTo, amount);
-}
+};
 
-//add extra property to tokenBalancesMap, containing decimal property (may need to re-work this)
-//otherwise if above is not possible then do a function to check if token is inside tokenList/otherBalances if not then get decimals value from 
-//the other list and proceed with swap
