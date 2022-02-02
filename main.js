@@ -5,7 +5,6 @@ Moralis.start({ serverUrl, appId });
 var web3;
 var chainID;
 
-console.log(process.env)
 
 var user = window.ethereum.selectedAddress;
 var dex;
